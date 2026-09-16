@@ -1,0 +1,1147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fal Direct</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #101318;
+        --panel: #191f27;
+        --line: #313946;
+        --text: #f4f6f8;
+        --muted: #aab4c0;
+        --accent: #34b27a;
+        --danger: #ff6b6b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .phoneApp {
+        width: min(100%, 720px);
+        margin: 0 auto;
+        padding: 18px;
+      }
+
+      .header {
+        padding: 10px 2px 16px;
+      }
+
+      .eyebrow {
+        margin: 0 0 6px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 30px;
+        line-height: 1.1;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 16px;
+      }
+
+      .promptPanel,
+      .resultPanel,
+      .controlPanel {
+        display: grid;
+        gap: 14px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .controlPanel {
+        padding: 14px;
+        background: #131922;
+      }
+
+      .resultPanel {
+        margin-top: 14px;
+      }
+
+      .panelHeader {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .controlGrid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .presetRow {
+        display: flex;
+      }
+
+      label {
+        display: grid;
+        gap: 7px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      textarea,
+      input,
+      select {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 12px;
+        background: #111720;
+        color: var(--text);
+        font: inherit;
+        line-height: 1.45;
+      }
+
+      input[type="range"] {
+        padding: 0;
+      }
+
+      button {
+        min-height: 48px;
+        border: 0;
+        border-radius: 6px;
+        background: var(--accent);
+        color: #06110b;
+        font: inherit;
+        font-weight: 800;
+      }
+
+      button:disabled {
+        opacity: 0.65;
+      }
+
+      .smallButton {
+        min-height: 36px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        background: #243040;
+        color: var(--text);
+        font-size: 13px;
+      }
+
+      .presetButton {
+        width: 100%;
+        border: 1px solid var(--line);
+        background: #243040;
+        color: var(--text);
+      }
+
+      .rangeValue {
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      img {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+      }
+
+      a {
+        color: #8bd8ff;
+      }
+
+      .resultActions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .resultActions a {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #243040;
+        color: var(--text);
+        text-decoration: none;
+        font-weight: 800;
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .galleryGrid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .galleryItem {
+        display: grid;
+        gap: 3px;
+        padding: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #111720;
+        color: var(--text);
+        overflow: hidden;
+        text-align: left;
+        cursor: pointer;
+        -webkit-tap-highlight-color: rgba(52, 178, 122, 0.22);
+      }
+
+      .galleryItem img {
+        aspect-ratio: 1;
+        object-fit: cover;
+        border: 0;
+        border-radius: 0;
+      }
+
+      .galleryItem span {
+        padding: 0 4px 5px;
+        color: var(--muted);
+        font-size: 10px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="phoneApp">
+      <section class="header">
+        <p class="eyebrow">Fal Direct</p>
+        <h1>Image Prompt</h1>
+      </section>
+
+      <form id="phoneForm" class="promptPanel">
+        <label>
+          Fal API key
+          <input id="falKey" type="password" autocomplete="off" placeholder="Paste FAL_KEY here" />
+        </label>
+
+        <div class="actions">
+          <button id="saveKeyButton" class="smallButton" type="button">Save key</button>
+          <button id="forgetKeyButton" class="smallButton" type="button" disabled>Key kept</button>
+        </div>
+
+        <label>
+          Prompt
+          <textarea id="prompt" rows="9" placeholder="Type the image you want..."></textarea>
+        </label>
+
+        <div class="presetRow">
+          <button id="handwashKameezPreset" class="presetButton" type="button">Handwash kameez</button>
+        </div>
+
+        <section class="controlPanel">
+          <h2>Camera Controls</h2>
+          <div class="controlGrid">
+            <label>
+              Aperture <span id="apertureValue" class="rangeValue">f/5.0</span>
+              <input id="aperture" type="range" min="5" max="250" step="1" value="50" />
+            </label>
+
+            <label>
+              Focal length <span id="focalLengthValue" class="rangeValue">50mm</span>
+              <input id="focalLength" type="range" min="15" max="500" step="1" value="50" />
+            </label>
+
+            <label>
+              Focus point
+              <select id="focusPoint">
+                <option value="eyes">Eyes</option>
+                <option value="nose">Nose</option>
+                <option value="shoulder">Shoulder</option>
+                <option value="neck">Neck</option>
+                <option value="upper body">Upper body</option>
+                <option value="tummy">Tummy</option>
+                <option value="upper thigh">Upper thigh</option>
+                <option value="calf">Calf</option>
+                <option value="toes">Toes</option>
+                <option value="finger">Finger</option>
+              </select>
+            </label>
+
+            <label>
+              Camera height <span id="cameraHeightValue" class="rangeValue">150cm</span>
+              <input id="cameraHeight" type="range" min="0" max="200" step="1" value="150" />
+            </label>
+
+            <label>
+              Camera exposure <span id="exposureValue" class="rangeValue">0 EV</span>
+              <input id="exposure" type="range" min="-30" max="30" step="1" value="0" />
+            </label>
+
+            <label>
+              Clothing thickness <span id="clothingThicknessValue" class="rangeValue">50%</span>
+              <input id="clothingThickness" type="range" min="0" max="100" step="1" value="50" />
+            </label>
+
+            <label>
+              Megapixels <span id="megapixelsValue" class="rangeValue">0.5 MP</span>
+              <input id="megapixels" type="range" min="0.5" max="4" step="0.5" value="0.5" />
+            </label>
+          </div>
+        </section>
+
+        <label>
+          Model
+          <select id="model">
+            <option value="ideogram/v4">Ideogram v4</option>
+            <option value="fal-ai/flux-2/klein/9b">Flux 2 Klein 9B</option>
+            <option value="fal-ai/flux-2/klein/9b/edit">Flux 2 Klein 9B Edit</option>
+            <option value="fal-ai/flux-2/klein/9b/base/edit">Flux 2 Klein 9B Base Edit</option>
+            <option value="fal-ai/flux-2/edit">Flux 2 Dev Edit</option>
+            <option value="fal-ai/flux/dev">Flux Dev</option>
+            <option value="krea/v2/medium/text-to-image">Krea 2 Medium</option>
+            <option value="krea/v2/large/text-to-image">Krea 2 Large / Full</option>
+            <option value="fal-ai/krea-2/turbo" selected>Krea 2 Turbo</option>
+          </select>
+        </label>
+
+        <section class="controlPanel">
+          <h2>LoRA Controls</h2>
+          <div class="controlGrid" id="loraGrid"></div>
+        </section>
+
+        <label>
+          Resolution
+          <select id="resolution">
+            <option value="model_default">Model default</option>
+            <option value="square_hd">Square HD</option>
+            <option value="square">Square</option>
+            <option value="portrait_16_9" selected>Portrait 9:16</option>
+            <option value="portrait_4_3">Portrait 3:4</option>
+            <option value="landscape_16_9">Landscape 16:9</option>
+            <option value="landscape_4_3">Landscape 4:3</option>
+          </select>
+        </label>
+
+        <label>
+          Reference image for edit
+          <input id="reference" type="file" accept="image/*" />
+        </label>
+
+        <label>
+          Config JSON
+          <textarea id="config" rows="7" spellcheck="false"></textarea>
+        </label>
+
+        <button id="submitButton" type="submit">Generate</button>
+      </form>
+
+      <section class="resultPanel">
+        <p id="status" class="status">Ready. Paste your fal key once, then generate.</p>
+        <p style="font-size:12px">Your key stays in this browser's local storage and is sent only to fal.ai.</p>
+        <img id="preview" alt="" hidden />
+        <div class="resultActions">
+          <a id="imageLink" hidden>Open image</a>
+          <a id="saveLink" hidden>Save image</a>
+        </div>
+        <button id="upscaleButton" class="presetButton" type="button" hidden>Upscale 4K</button>
+      </section>
+
+      <section class="resultPanel">
+        <div class="panelHeader">
+          <h2>Last 10 Photos</h2>
+          <button id="clearGalleryButton" class="smallButton" type="button">Clear</button>
+        </div>
+        <div id="galleryGrid" class="galleryGrid" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script>
+      const STORAGE_KEY = "iphoneFalDirect.key";
+      const HISTORY_KEY = "iphoneFalDirect.history.v1";
+      const HISTORY_LIMIT = 10;
+      const REST_API = "https://rest.fal.ai";
+      const QUEUE_API = "https://queue.fal.run";
+
+      const form = document.querySelector("#phoneForm");
+      const falKeyInput = document.querySelector("#falKey");
+      const saveKeyButton = document.querySelector("#saveKeyButton");
+      const forgetKeyButton = document.querySelector("#forgetKeyButton");
+      const promptInput = document.querySelector("#prompt");
+      const handwashKameezPreset = document.querySelector("#handwashKameezPreset");
+      const apertureInput = document.querySelector("#aperture");
+      const apertureValue = document.querySelector("#apertureValue");
+      const focalLengthInput = document.querySelector("#focalLength");
+      const focalLengthValue = document.querySelector("#focalLengthValue");
+      const focusPointInput = document.querySelector("#focusPoint");
+      const cameraHeightInput = document.querySelector("#cameraHeight");
+      const cameraHeightValue = document.querySelector("#cameraHeightValue");
+      const exposureInput = document.querySelector("#exposure");
+      const exposureValue = document.querySelector("#exposureValue");
+      const clothingThicknessInput = document.querySelector("#clothingThickness");
+      const clothingThicknessValue = document.querySelector("#clothingThicknessValue");
+      const megapixelsInput = document.querySelector("#megapixels");
+      const megapixelsValue = document.querySelector("#megapixelsValue");
+      const modelInput = document.querySelector("#model");
+      const loraGrid = document.querySelector("#loraGrid");
+      const resolutionInput = document.querySelector("#resolution");
+      const configInput = document.querySelector("#config");
+      const referenceInput = document.querySelector("#reference");
+      const submitButton = document.querySelector("#submitButton");
+      const statusEl = document.querySelector("#status");
+      const preview = document.querySelector("#preview");
+      const imageLink = document.querySelector("#imageLink");
+      const saveLink = document.querySelector("#saveLink");
+      const upscaleButton = document.querySelector("#upscaleButton");
+      const galleryGrid = document.querySelector("#galleryGrid");
+      const clearGalleryButton = document.querySelector("#clearGalleryButton");
+      let currentImageUrl = "";
+
+      const handwashKameezPrompt = [
+        "Chinese Woman in shoulder dramatic extremely large square low cut embroidered kameez washing hand.",
+        "She bend forward 90 degree to reach out.",
+        "Follow the image reference posture 100%.",
+        "Camera light flashing to entire scene.",
+        "Women chest are flat almost in boy body shape."
+      ].join(" ");
+
+      const defaultConfig = {
+        expansion_model: "Large",
+        image_size: "portrait_16_9",
+        rendering_speed: "BALANCED",
+        acceleration: "none",
+        num_images: 1,
+        sync_mode: false,
+        enable_safety_checker: false,
+        output_format: "png"
+      };
+
+      const krea2Config = {
+        image_size: "portrait_16_9",
+        num_images: 1,
+        acceleration: "none",
+        enable_prompt_expansion: true,
+        sync_mode: false,
+        enable_safety_checker: false,
+        output_format: "png"
+      };
+
+      const fluxDevConfig = {
+        image_size: "portrait_16_9",
+        num_images: 1,
+        guidance_scale: 3.5,
+        num_inference_steps: 28,
+        sync_mode: false,
+        enable_safety_checker: false,
+        output_format: "png"
+      };
+
+      const flux2KleinConfig = {
+        image_size: "portrait_16_9",
+        num_images: 1,
+        num_inference_steps: 4,
+        sync_mode: false,
+        enable_safety_checker: false,
+        output_format: "png"
+      };
+
+      const krea2FullConfig = {
+        aspect_ratio: "9:16",
+        creativity: "medium"
+      };
+
+      const editConfig = {
+        num_images: 1,
+        output_format: "png",
+        sync_mode: false,
+        enable_safety_checker: false
+      };
+
+      const loraPresets = {
+        none: { label: "None" },
+        lorin_ideogram4: {
+          label: "Lorin - Ideogram v4",
+          family: "ideogram4",
+          path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/falai_ideogram_v4_lora.safetensors"
+        },
+        lorin_krea2: {
+          label: "Lorin - Krea 2",
+          family: "krea2",
+          path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/Lorin_krea2_lora_step_850.safetensors"
+        },
+        realdb_krea2: {
+          label: "RealDB v3.2 - Krea 2",
+          family: "krea2",
+          path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/RealDB_v3.2.safetensors"
+        },
+        realism_engine_krea2_v31: {
+          label: "realism_engine_krea2_v3.1",
+          family: "krea2",
+          path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/realism_engine_krea2_v3.1.safetensors"
+        },
+        cli_krea2: {
+          label: "Cli Krea2",
+          family: "krea2",
+          path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/Cli%20Krea2.safetensors"
+        },
+        nmfunct_krea2: {
+          label: "NMFuncT Krea2",
+          family: "krea2",
+          path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/NMFuncT%20Krea2.safetensors"
+        },
+        election_politic_krea2: {
+          label: "Election politic Krea2",
+          family: "krea2",
+          path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/Election%20politic%20Krea2.safetensors"
+        },
+        atasski_krea2: {
+          label: "AtasSki Krea2",
+          family: "krea2",
+          path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/AtasSki%20Krea2.safetensors"
+        },
+        cxna_krea2: {
+          label: "CxNa Krea2",
+          family: "krea2",
+          path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/CxNa%20Krea2.safetensors"
+        },
+        identity_edit_krea2: {
+          label: "Identity Edit v1.2 - Krea 2",
+          family: "krea2",
+          path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/krea2_identity_edit_v1_2.safetensors"
+        },
+        ohnopt_krea2: {
+          label: "Xada_PT Krea2",
+          family: "krea2",
+          path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/Xada_PT_Krea2.safetensors"
+        },
+        tnybb_krea2: {
+          label: "TnyBbKrea2",
+          family: "krea2",
+          path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/TnyBbKrea2.safetensors"
+        },
+        rain_wet_clothe_fashion_krea2: {
+          label: "RainWetClotheFashion Krea2",
+          family: "krea2",
+          path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/RainWetClotheFashion_Krea2.safetensors"
+        },
+        lorin_flux2_klein: {
+          label: "Lorin - Flux 2 Klein",
+          family: "flux2_klein",
+          path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/flux2klein_lorin_falai.safetensors"
+        }
+      };
+
+      const loraControls = [];
+
+      function setStatus(message, isError = false) {
+        statusEl.textContent = message;
+        statusEl.classList.toggle("error", isError);
+      }
+
+      function authHeaders() {
+        const key = falKeyInput.value.trim();
+        if (!key) throw new Error("Paste your fal key first.");
+        return {
+          Authorization: `Key ${key}`,
+          Accept: "application/json",
+          "Content-Type": "application/json"
+        };
+      }
+
+      async function falJson(url, options = {}) {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            ...authHeaders(),
+            ...(options.headers || {})
+          }
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.detail || data.message || data.error || `fal HTTP ${response.status}`);
+        }
+        return data;
+      }
+
+      async function uploadFile(file) {
+        const initiate = await falJson(`${REST_API}/storage/upload/initiate?storage_type=fal-cdn-v3`, {
+          method: "POST",
+          body: JSON.stringify({
+            content_type: file.type || "application/octet-stream",
+            file_name: file.name || `iphone-upload-${Date.now()}`
+          })
+        });
+
+        const uploadResponse = await fetch(initiate.upload_url, {
+          method: "PUT",
+          body: file,
+          headers: {
+            "Content-Type": file.type || "application/octet-stream"
+          }
+        });
+        if (!uploadResponse.ok) throw new Error(`Upload failed: ${uploadResponse.status}`);
+        return initiate.file_url;
+      }
+
+      async function submitQueue(endpointId, input) {
+        return falJson(`${QUEUE_API}/${endpointId}`, {
+          method: "POST",
+          body: JSON.stringify(input)
+        });
+      }
+
+      async function waitForQueue(queued) {
+        const requestId = queued.request_id || queued.requestId;
+        const statusUrl = queued.status_url || queued.statusUrl;
+        if (!statusUrl) throw new Error("fal did not return a status URL.");
+
+        for (let attempt = 0; attempt < 240; attempt += 1) {
+          const url = new URL(statusUrl);
+          url.searchParams.set("logs", "1");
+          const status = await falJson(url.toString(), {
+            method: "GET"
+          });
+          if (status.status === "COMPLETED") return;
+          if (status.status === "FAILED") throw new Error(status.error || "fal generation failed.");
+          const queuePosition = status.queue_position ?? status.position;
+          if (status.status === "IN_QUEUE" && Number.isFinite(queuePosition)) {
+            setStatus(`Queued. Position ${queuePosition}...`);
+          } else {
+            setStatus(`Generating... ${status.status || "working"}`);
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1200));
+        }
+        throw new Error("Timed out waiting for fal.");
+      }
+
+      async function runFal(endpointId, input) {
+        const queued = await submitQueue(endpointId, input);
+        const requestId = queued.request_id || queued.requestId;
+        if (!requestId) throw new Error("fal did not return a request id.");
+        const responseUrl = queued.response_url || queued.responseUrl;
+        if (!responseUrl) throw new Error("fal did not return a response URL.");
+        setStatus(`Queued: ${requestId}`);
+        await waitForQueue(queued);
+        return falJson(responseUrl, { method: "GET" });
+      }
+
+      function collectMedia(result) {
+        const data = result?.data || result;
+        const candidates = [
+          data?.image,
+          ...(Array.isArray(data?.images) ? data.images : []),
+          ...(Array.isArray(data?.data?.images) ? data.data.images : [])
+        ].filter(Boolean);
+        return candidates
+          .map((item) => (typeof item === "string" ? { url: item } : item))
+          .filter((item) => item?.url);
+      }
+
+      function selectedLoras() {
+        return loraControls
+          .map((control) => ({
+            key: control.select.value,
+            scale: Number(control.strength.value) / 100
+          }))
+          .filter((entry) => entry.key !== "none")
+          .map((entry) => ({ ...entry, ...loraPresets[entry.key] }))
+          .filter((entry) => entry.path);
+      }
+
+      function selectedLoraFamily() {
+        return selectedLoras()[0]?.family || null;
+      }
+
+      function hasLoraFamilyConflict() {
+        return new Set(selectedLoras().map((entry) => entry.family)).size > 1;
+      }
+
+      function selectedModel() {
+        const family = selectedLoraFamily();
+        if (family === "ideogram4") return "ideogram/v4/lora";
+        if (family === "krea2") return "fal-ai/krea-2/turbo/lora";
+        if (family === "flux2_klein") return "fal-ai/flux-2/klein/9b/lora";
+        return modelInput.value;
+      }
+
+      function baseConfigForLoraFamily(family) {
+        if (family === "ideogram4") return { ...defaultConfig };
+        if (family === "krea2") return { ...krea2Config };
+        if (family === "flux2_klein") return { ...flux2KleinConfig };
+        return null;
+      }
+
+      function isKreaV2Model(model) {
+        return model.startsWith("krea/v2/");
+      }
+
+      function aspectForResolution(resolution) {
+        if (resolution === "portrait_16_9") return 9 / 16;
+        if (resolution === "portrait_4_3") return 3 / 4;
+        if (resolution === "landscape_16_9") return 16 / 9;
+        if (resolution === "landscape_4_3") return 4 / 3;
+        return 1;
+      }
+
+      function kreaAspectForResolution(resolution) {
+        if (resolution === "portrait_16_9") return "9:16";
+        if (resolution === "portrait_4_3") return "2:3";
+        if (resolution === "landscape_16_9") return "16:9";
+        if (resolution === "landscape_4_3") return "4:3";
+        return "1:1";
+      }
+
+      function snapToModelSize(value) {
+        return Math.max(512, Math.round(value / 64) * 64);
+      }
+
+      function imageSizeForMegapixels(resolution, megapixels) {
+        const aspect = aspectForResolution(resolution);
+        const pixels = megapixels * 1_000_000;
+        const rawHeight = Math.sqrt(pixels / aspect);
+        const rawWidth = rawHeight * aspect;
+        return {
+          width: snapToModelSize(rawWidth),
+          height: snapToModelSize(rawHeight)
+        };
+      }
+
+      function applyResolution(config) {
+        const endpointId = selectedModel();
+        const resolution = resolutionInput.value;
+        const megapixels = Number(megapixelsInput.value);
+
+        if (isKreaV2Model(endpointId)) {
+          const nextConfig = { ...config };
+          if (resolution === "model_default") {
+            delete nextConfig.aspect_ratio;
+            return nextConfig;
+          }
+          nextConfig.aspect_ratio = kreaAspectForResolution(resolution);
+          return nextConfig;
+        }
+
+        if (!megapixels) {
+          delete config.image_size;
+          return config;
+        }
+        return {
+          ...config,
+          image_size: imageSizeForMegapixels(resolution, megapixels)
+        };
+      }
+
+      function setConfigForModel() {
+        let nextConfig;
+        const loras = selectedLoras();
+        if (loras.length) {
+          const family = selectedLoraFamily();
+          nextConfig = baseConfigForLoraFamily(family);
+          nextConfig.loras = loras
+            .filter((entry) => entry.family === family)
+            .map((entry) => ({ path: entry.path, scale: entry.scale }));
+        } else if (modelInput.value.includes("/edit")) {
+          nextConfig = { ...editConfig };
+        } else if (modelInput.value === "fal-ai/krea-2/turbo") {
+          nextConfig = { ...krea2Config };
+        } else if (modelInput.value === "fal-ai/flux/dev") {
+          nextConfig = { ...fluxDevConfig };
+        } else if (modelInput.value === "fal-ai/flux-2/klein/9b") {
+          nextConfig = { ...flux2KleinConfig };
+        } else if (isKreaV2Model(modelInput.value)) {
+          nextConfig = { ...krea2FullConfig };
+        } else {
+          nextConfig = { ...defaultConfig };
+        }
+        configInput.value = JSON.stringify(applyResolution(nextConfig), null, 2);
+      }
+
+      function formatAperture() {
+        const value = Number(apertureInput.value) / 10;
+        return Number.isInteger(value) ? `f/${value.toFixed(0)}` : `f/${value.toFixed(1)}`;
+      }
+
+      function formatExposure() {
+        const value = Number(exposureInput.value) / 10;
+        if (value === 0) return "0 EV";
+        return `${value > 0 ? "+" : ""}${value.toFixed(1)} EV`;
+      }
+
+      function lensDescription(mm) {
+        if (mm <= 24) return "ultra wide-angle lens";
+        if (mm <= 35) return "wide-angle lens";
+        if (mm <= 70) return "natural portrait lens";
+        if (mm <= 135) return "short telephoto portrait lens";
+        if (mm <= 300) return "telephoto lens with compression";
+        return "super telephoto lens with strong compression";
+      }
+
+      function apertureDescription(value) {
+        if (value <= 10) return "extreme shallow depth of field with dreamy blur";
+        if (value <= 28) return "very shallow depth of field";
+        if (value <= 56) return "shallow depth of field";
+        if (value <= 110) return "moderate depth of field";
+        return "deep depth of field";
+      }
+
+      function cameraHeightDescription(cm) {
+        if (cm <= 20) return "floor-level low angle";
+        if (cm <= 60) return "low handheld angle";
+        if (cm <= 110) return "waist-height camera angle";
+        if (cm <= 160) return "chest-to-eye-level camera angle";
+        return "high camera angle approaching top view";
+      }
+
+      function exposureDescription(value) {
+        if (value <= -20) return "intentionally darker underexposed image";
+        if (value <= -6) return "slightly darker exposure";
+        if (value <= 5) return "neutral balanced exposure";
+        if (value <= 19) return "slightly brighter exposure";
+        return "bright high-key exposure";
+      }
+
+      function clothingThicknessDescription(value) {
+        if (value <= 20) return "light fabric clothing, still fully clothed";
+        if (value <= 45) return "medium-light fabric clothing, fully clothed";
+        if (value <= 70) return "medium fabric clothing, fully clothed";
+        if (value <= 90) return "thick fabric clothing, fully clothed";
+        return "heavy layered clothing, fully clothed";
+      }
+
+      function cameraControlPrompt() {
+        const apertureRaw = Number(apertureInput.value);
+        const aperture = formatAperture();
+        const focalLength = Number(focalLengthInput.value);
+        const focusPoint = focusPointInput.value;
+        const cameraHeight = Number(cameraHeightInput.value);
+        const exposureRaw = Number(exposureInput.value);
+        const exposure = formatExposure();
+        const clothingThickness = Number(clothingThicknessInput.value);
+
+        return [
+          `Camera controls: ${aperture} aperture, ${apertureDescription(apertureRaw)}, ${focalLength}mm ${lensDescription(focalLength)}.`,
+          `Focus point: sharp focus on the ${focusPoint}.`,
+          `Camera height: ${cameraHeight}cm from the floor, ${cameraHeightDescription(cameraHeight)}.`,
+          `Camera exposure: ${exposure}, ${exposureDescription(exposureRaw)}.`,
+          `Clothing thickness: ${clothingThickness}/100, ${clothingThicknessDescription(clothingThickness)}.`
+        ].join(" ");
+      }
+
+      function enhancedPrompt() {
+        return `${promptInput.value.trim()}\n\n${cameraControlPrompt()}`.trim();
+      }
+
+      function updateControlLabels() {
+        apertureValue.textContent = formatAperture();
+        focalLengthValue.textContent = `${focalLengthInput.value}mm`;
+        cameraHeightValue.textContent = `${cameraHeightInput.value}cm`;
+        exposureValue.textContent = formatExposure();
+        clothingThicknessValue.textContent = `${clothingThicknessInput.value}%`;
+        megapixelsValue.textContent = `${Number(megapixelsInput.value).toFixed(1)} MP`;
+        for (const control of loraControls) {
+          control.value.textContent = (Number(control.strength.value) / 100).toFixed(2);
+        }
+      }
+
+      function loadHistory() {
+        try {
+          const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+          return Array.isArray(history) ? history : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function saveHistory(history) {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, HISTORY_LIMIT)));
+        renderGallery();
+      }
+
+      function addHistoryEntry(entry) {
+        saveHistory([
+          {
+            id: crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            createdAt: new Date().toISOString(),
+            ...entry
+          },
+          ...loadHistory()
+        ]);
+      }
+
+      function showImage(url) {
+        currentImageUrl = url;
+        preview.src = url;
+        preview.hidden = false;
+        imageLink.href = url;
+        imageLink.hidden = false;
+        saveLink.href = url;
+        saveLink.download = `fal-image-${Date.now()}.png`;
+        saveLink.hidden = false;
+        upscaleButton.hidden = false;
+      }
+
+      function galleryLabel(entry) {
+        const date = new Date(entry.createdAt);
+        if (Number.isNaN(date.getTime())) return "Saved";
+        return date.toLocaleString([], {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+
+      function firstHistoryImage(entry) {
+        const image = entry.images?.find((item) => item?.url);
+        return image?.url || "";
+      }
+
+      function restoreEntry(entry) {
+        const url = firstHistoryImage(entry);
+        if (!url) return;
+        showImage(url);
+        setStatus(`Loaded from history: ${entry.model || "fal"}`);
+      }
+
+      function renderGallery() {
+        const history = loadHistory();
+        galleryGrid.textContent = "";
+        if (!history.length) {
+          galleryGrid.textContent = "No generated history yet.";
+          return;
+        }
+        for (const entry of history) {
+          const url = firstHistoryImage(entry);
+          if (!url) continue;
+          const item = document.createElement("article");
+          item.className = "galleryItem";
+          item.tabIndex = 0;
+          item.setAttribute("role", "button");
+
+          const image = document.createElement("img");
+          image.src = url;
+          image.alt = "";
+          image.loading = "lazy";
+
+          const label = document.createElement("span");
+          label.textContent = `${galleryLabel(entry)} | ${entry.model || "fal"}`;
+
+          const restore = () => restoreEntry(entry);
+          item.append(image, label);
+          item.addEventListener("click", restore);
+          item.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              restore();
+            }
+          });
+          galleryGrid.append(item);
+        }
+      }
+
+      function buildLoraControls() {
+        const options = Object.entries(loraPresets)
+          .map(([key, preset]) => `<option value="${key}">${preset.label}</option>`)
+          .join("");
+        for (let index = 1; index <= 8; index += 1) {
+          const loraLabel = document.createElement("label");
+          loraLabel.textContent = `LoRA ${index}`;
+          const select = document.createElement("select");
+          select.innerHTML = options;
+          loraLabel.append(select);
+
+          const strengthLabel = document.createElement("label");
+          strengthLabel.innerHTML = `LoRA ${index} strength <span class="rangeValue">1.00</span>`;
+          const strength = document.createElement("input");
+          strength.type = "range";
+          strength.min = "0";
+          strength.max = "150";
+          strength.step = "5";
+          strength.value = "100";
+          strengthLabel.append(strength);
+
+          const value = strengthLabel.querySelector(".rangeValue");
+          loraControls.push({ select, strength, value });
+          loraGrid.append(loraLabel, strengthLabel);
+        }
+      }
+
+      async function buildInput() {
+        if (hasLoraFamilyConflict()) {
+          throw new Error("All selected LoRAs must be from the same model family.");
+        }
+
+        const input = JSON.parse(configInput.value || "{}");
+        const prompt = enhancedPrompt();
+        if (!prompt) throw new Error("Write a prompt first.");
+        input.prompt = prompt;
+
+        const endpointId = selectedModel();
+        const file = referenceInput.files?.[0];
+        if (file) {
+          setStatus("Uploading reference image...");
+          const referenceUrl = await uploadFile(file);
+          if (isKreaV2Model(endpointId)) {
+            input.image_style_references = [{ image_url: referenceUrl, strength: 1 }];
+          } else if (endpointId.includes("seedvr")) {
+            input.image_url = referenceUrl;
+          } else {
+            input.image_urls = [referenceUrl];
+          }
+        }
+
+        return { endpointId, input, prompt };
+      }
+
+      async function generateImage() {
+        submitButton.disabled = true;
+        upscaleButton.disabled = true;
+        preview.hidden = true;
+        imageLink.hidden = true;
+        saveLink.hidden = true;
+        currentImageUrl = "";
+        setStatus("Generating...");
+
+        try {
+          localStorage.setItem(STORAGE_KEY, falKeyInput.value.trim());
+          setConfigForModel();
+          const { endpointId, input, prompt } = await buildInput();
+          const result = await runFal(endpointId, input);
+          const images = collectMedia(result);
+          if (!images.length) throw new Error("fal returned no image URL.");
+
+          showImage(images[0].url);
+          addHistoryEntry({
+            model: endpointId,
+            prompt,
+            images
+          });
+          setStatus(`Done. ${images.length} image${images.length === 1 ? "" : "s"} returned.`);
+        } catch (error) {
+          setStatus(error.message, true);
+        } finally {
+          submitButton.disabled = false;
+          upscaleButton.disabled = false;
+        }
+      }
+
+      async function upscaleCurrentImage() {
+        if (!currentImageUrl) {
+          setStatus("Generate or choose an image first.", true);
+          return;
+        }
+
+        submitButton.disabled = true;
+        upscaleButton.disabled = true;
+        setStatus("Upscaling to 4K with SeedVR...");
+
+        try {
+          const input = {
+            upscale_mode: "target",
+            target_resolution: "2160p",
+            noise_scale: 0.1,
+            output_format: "png",
+            sync_mode: false,
+            image_url: currentImageUrl
+          };
+          const endpointId = "fal-ai/seedvr/upscale/image";
+          const result = await runFal(endpointId, input);
+          const images = collectMedia(result);
+          if (!images.length) throw new Error("SeedVR returned no image URL.");
+
+          showImage(images[0].url);
+          addHistoryEntry({
+            model: endpointId,
+            prompt: "SeedVR 4K upscale",
+            images
+          });
+          setStatus("Done. Upscaled to 4K.");
+        } catch (error) {
+          setStatus(error.message, true);
+        } finally {
+          submitButton.disabled = false;
+          upscaleButton.disabled = false;
+        }
+      }
+
+      buildLoraControls();
+
+      falKeyInput.value = localStorage.getItem(STORAGE_KEY) || "";
+      configInput.value = JSON.stringify(krea2Config, null, 2);
+      updateControlLabels();
+      renderGallery();
+
+      for (const input of [
+        apertureInput,
+        focalLengthInput,
+        cameraHeightInput,
+        exposureInput,
+        clothingThicknessInput,
+        megapixelsInput,
+        resolutionInput
+      ]) {
+        input.addEventListener("input", () => {
+          updateControlLabels();
+          setConfigForModel();
+        });
+        input.addEventListener("change", () => {
+          updateControlLabels();
+          setConfigForModel();
+        });
+      }
+
+      for (const control of loraControls) {
+        control.select.addEventListener("change", setConfigForModel);
+        control.strength.addEventListener("input", () => {
+          updateControlLabels();
+          setConfigForModel();
+        });
+      }
+
+      saveKeyButton.addEventListener("click", () => {
+        localStorage.setItem(STORAGE_KEY, falKeyInput.value.trim());
+        setStatus("Key saved on this browser.");
+      });
+
+      forgetKeyButton.addEventListener("click", () => {
+        setStatus("Key is kept on this browser.");
+      });
+
+      modelInput.addEventListener("change", setConfigForModel);
+      handwashKameezPreset.addEventListener("click", () => {
+        promptInput.value = handwashKameezPrompt;
+        promptInput.focus();
+        setStatus("Handwash kameez prompt loaded.");
+      });
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        generateImage();
+      });
+      upscaleButton.addEventListener("click", upscaleCurrentImage);
+      clearGalleryButton.addEventListener("click", () => {
+        localStorage.removeItem(HISTORY_KEY);
+        renderGallery();
+        setStatus("History cleared.");
+      });
+    </script>
+  </body>
+</html>
