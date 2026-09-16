@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Beauty Retouch</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #101318;
+        --panel: #191f27;
+        --line: #313946;
+        --text: #f4f6f8;
+        --muted: #aab4c0;
+        --accent: #34b27a;
+        --danger: #ff6b6b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .phoneApp {
+        width: min(100%, 720px);
+        margin: 0 auto;
+        padding: 18px;
+      }
+
+      .header {
+        padding: 10px 2px 16px;
+      }
+
+      .eyebrow {
+        margin: 0 0 6px;
+        font-size: 13px;
+      }
+
+      .eyebrow a {
+        color: var(--muted);
+        text-decoration: none;
+      }
+
+      h1 {
+        margin: 0 0 6px;
+        font-size: 30px;
+        line-height: 1.1;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 16px;
+      }
+
+      .promptPanel,
+      .resultPanel,
+      .controlPanel {
+        display: grid;
+        gap: 14px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .controlPanel {
+        padding: 14px;
+        background: #131922;
+      }
+
+      .resultPanel {
+        margin-top: 14px;
+      }
+
+      .panelHeader {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 7px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      textarea,
+      input[type="password"],
+      input[type="text"],
+      select {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 12px;
+        background: #111720;
+        color: var(--text);
+        font: inherit;
+        line-height: 1.45;
+      }
+
+      button {
+        min-height: 48px;
+        border: 0;
+        border-radius: 6px;
+        background: var(--accent);
+        color: #06110b;
+        font: inherit;
+        font-weight: 800;
+      }
+
+      button:disabled {
+        opacity: 0.65;
+      }
+
+      .smallButton {
+        min-height: 36px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        background: #243040;
+        color: var(--text);
+        font-size: 13px;
+      }
+
+      .photoButton {
+        border: 1px solid var(--line);
+        background: #243040;
+        color: var(--text);
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .hiddenInput {
+        display: none;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .sub {
+        font-size: 14px;
+      }
+
+      .hint {
+        font-size: 12px;
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      img {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+      }
+
+      .thumb {
+        display: grid;
+        gap: 8px;
+      }
+
+      .thumb img {
+        max-height: 260px;
+        object-fit: contain;
+        background: #0b0f15;
+      }
+
+      .checkRow {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .checkRow input {
+        width: 22px;
+        height: 22px;
+        accent-color: var(--accent);
+      }
+
+      details summary {
+        color: var(--muted);
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      details .controlGrid {
+        display: grid;
+        gap: 12px;
+        padding-top: 12px;
+      }
+
+      .resultActions a {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #243040;
+        color: var(--text);
+        text-decoration: none;
+        font-weight: 800;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="phoneApp">
+      <section class="header">
+        <p class="eyebrow"><a href="./">&larr; Fal Direct</a></p>
+        <h1>Beauty Retouch</h1>
+        <p class="sub">Take or pick a photo, retouch it, upscale to 4K.</p>
+      </section>
+
+      <form id="beautyForm" class="promptPanel">
+        <label>
+          Fal API key
+          <input id="falKey" type="password" autocomplete="off" placeholder="Paste FAL_KEY here" />
+        </label>
+
+        <div class="actions">
+          <button id="saveKeyButton" class="smallButton" type="button">Save key</button>
+          <button id="resetPromptButton" class="smallButton" type="button">Reset prompt</button>
+        </div>
+
+        <label>
+          Retouch prompt
+          <textarea id="prompt" rows="7"></textarea>
+        </label>
+
+        <section class="controlPanel">
+          <div class="panelHeader">
+            <h2>Photo</h2>
+            <button id="clearPhotoButton" class="smallButton" type="button" hidden>Remove</button>
+          </div>
+
+          <div class="actions">
+            <button id="cameraButton" class="photoButton" type="button">Take photo</button>
+            <button id="libraryButton" class="photoButton" type="button">Choose photo</button>
+          </div>
+
+          <input id="cameraInput" class="hiddenInput" type="file" accept="image/*" capture="environment" />
+          <input id="libraryInput" class="hiddenInput" type="file" accept="image/*" />
+
+          <div id="thumbWrap" class="thumb" hidden>
+            <img id="thumb" alt="Selected photo" />
+            <p id="photoName" class="hint"></p>
+          </div>
+        </section>
+
+        <div class="checkRow">
+          <input id="doUpscale" type="checkbox" checked />
+          <label for="doUpscale">Upscale result to 4K</label>
+        </div>
+
+        <details>
+          <summary>Advanced</summary>
+          <div class="controlGrid">
+            <label>
+              Edit model
+              <select id="editModel">
+                <option value="fal-ai/flux-2/edit" selected>Flux 2 Dev Edit</option>
+                <option value="fal-ai/flux-2/klein/9b/edit">Flux 2 Klein 9B Edit</option>
+                <option value="fal-ai/flux-2/klein/9b/base/edit">Flux 2 Klein 9B Base Edit</option>
+              </select>
+            </label>
+
+            <label>
+              Upscale endpoint
+              <input id="upscaleEndpoint" type="text" spellcheck="false" value="fal-ai/seedvr/upscale/image" />
+            </label>
+          </div>
+        </details>
+
+        <button id="submitButton" type="submit">Retouch photo</button>
+      </form>
+
+      <section class="resultPanel">
+        <p id="status" class="status">Ready. Paste your fal key once, then pick a photo.</p>
+        <img id="preview" alt="" hidden />
+        <div class="resultActions">
+          <a id="imageLink" hidden target="_blank" rel="noopener">Open full image</a>
+        </div>
+        <p id="saveHint" class="hint" hidden>Long-press the image to save it to your photos.</p>
+      </section>
+    </main>
+
+    <script>
+      const STORAGE_KEY = "iphoneFalDirect.key";
+      const REST_API = "https://rest.fal.ai";
+      const QUEUE_API = "https://queue.fal.run";
+
+      const defaultPrompt = [
+        "Retouch this photo with natural, high-end beauty retouching.",
+        "Even out and smooth the skin tone while keeping realistic skin texture and visible pores.",
+        "Remove freckles, blemishes and spots. Remove under-eye bags and dark circles.",
+        "Gently slim the face and body contour. Brighten and sharpen the eyes.",
+        "Keep the identity, facial features, pose, clothing, lighting and background exactly the same.",
+        "Photorealistic result. No plastic or over-smoothed skin, no airbrushed look."
+      ].join(" ");
+
+      const editConfig = {
+        num_images: 1,
+        output_format: "png",
+        sync_mode: false,
+        enable_safety_checker: false
+      };
+
+      const form = document.querySelector("#beautyForm");
+      const falKeyInput = document.querySelector("#falKey");
+      const saveKeyButton = document.querySelector("#saveKeyButton");
+      const resetPromptButton = document.querySelector("#resetPromptButton");
+      const promptInput = document.querySelector("#prompt");
+      const cameraButton = document.querySelector("#cameraButton");
+      const libraryButton = document.querySelector("#libraryButton");
+      const cameraInput = document.querySelector("#cameraInput");
+      const libraryInput = document.querySelector("#libraryInput");
+      const clearPhotoButton = document.querySelector("#clearPhotoButton");
+      const thumbWrap = document.querySelector("#thumbWrap");
+      const thumb = document.querySelector("#thumb");
+      const photoName = document.querySelector("#photoName");
+      const doUpscale = document.querySelector("#doUpscale");
+      const editModel = document.querySelector("#editModel");
+      const upscaleEndpoint = document.querySelector("#upscaleEndpoint");
+      const submitButton = document.querySelector("#submitButton");
+      const statusEl = document.querySelector("#status");
+      const preview = document.querySelector("#preview");
+      const imageLink = document.querySelector("#imageLink");
+      const saveHint = document.querySelector("#saveHint");
+
+      let selectedFile = null;
+      let thumbUrl = "";
+
+      function setStatus(message, isError = false) {
+        statusEl.textContent = message;
+        statusEl.classList.toggle("error", isError);
+      }
+
+      function authHeaders() {
+        const key = falKeyInput.value.trim();
+        if (!key) throw new Error("Paste your fal key first.");
+        return {
+          Authorization: `Key ${key}`,
+          Accept: "application/json",
+          "Content-Type": "application/json"
+        };
+      }
+
+      async function falJson(url, options = {}) {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            ...authHeaders(),
+            ...(options.headers || {})
+          }
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.detail || data.message || data.error || `fal HTTP ${response.status}`);
+        }
+        return data;
+      }
+
+      async function uploadFile(file) {
+        const initiate = await falJson(`${REST_API}/storage/upload/initiate?storage_type=fal-cdn-v3`, {
+          method: "POST",
+          body: JSON.stringify({
+            content_type: file.type || "application/octet-stream",
+            file_name: file.name || `photo-${Date.now()}.jpg`
+          })
+        });
+
+        const uploadResponse = await fetch(initiate.upload_url, {
+          method: "PUT",
+          body: file,
+          headers: {
+            "Content-Type": file.type || "application/octet-stream"
+          }
+        });
+        if (!uploadResponse.ok) throw new Error(`Upload failed: ${uploadResponse.status}`);
+        return initiate.file_url;
+      }
+
+      async function waitForQueue(queued, label) {
+        const statusUrl = queued.status_url || queued.statusUrl;
+        if (!statusUrl) throw new Error("fal did not return a status URL.");
+
+        for (let attempt = 0; attempt < 240; attempt += 1) {
+          const url = new URL(statusUrl);
+          url.searchParams.set("logs", "1");
+          const status = await falJson(url.toString(), { method: "GET" });
+          if (status.status === "COMPLETED") return;
+          if (status.status === "FAILED") throw new Error(status.error || `${label} failed.`);
+          const queuePosition = status.queue_position ?? status.position;
+          if (status.status === "IN_QUEUE" && Number.isFinite(queuePosition)) {
+            setStatus(`${label}: queued, position ${queuePosition}...`);
+          } else {
+            setStatus(`${label}...`);
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1200));
+        }
+        throw new Error(`Timed out waiting for ${label}.`);
+      }
+
+      async function runFal(endpointId, input, label) {
+        const queued = await falJson(`${QUEUE_API}/${endpointId}`, {
+          method: "POST",
+          body: JSON.stringify(input)
+        });
+        const responseUrl = queued.response_url || queued.responseUrl;
+        if (!responseUrl) throw new Error("fal did not return a response URL.");
+        setStatus(`${label}...`);
+        await waitForQueue(queued, label);
+        return falJson(responseUrl, { method: "GET" });
+      }
+
+      function collectMedia(result) {
+        const data = result?.data || result;
+        const candidates = [
+          data?.image,
+          ...(Array.isArray(data?.images) ? data.images : []),
+          ...(Array.isArray(data?.data?.images) ? data.data.images : [])
+        ].filter(Boolean);
+        return candidates
+          .map((item) => (typeof item === "string" ? { url: item } : item))
+          .filter((item) => item?.url);
+      }
+
+      function firstImageUrl(result, label) {
+        const images = collectMedia(result);
+        if (!images.length) throw new Error(`${label} returned no image URL.`);
+        return images[0].url;
+      }
+
+      function showResult(url) {
+        preview.src = url;
+        preview.hidden = false;
+        imageLink.href = url;
+        imageLink.hidden = false;
+        saveHint.hidden = false;
+      }
+
+      function setPhoto(file) {
+        if (!file) return;
+        selectedFile = file;
+        if (thumbUrl) URL.revokeObjectURL(thumbUrl);
+        thumbUrl = URL.createObjectURL(file);
+        thumb.src = thumbUrl;
+        thumbWrap.hidden = false;
+        clearPhotoButton.hidden = false;
+        photoName.textContent = file.name || "Photo ready";
+        setStatus("Photo ready. Tap Retouch photo.");
+      }
+
+      function clearPhoto() {
+        selectedFile = null;
+        if (thumbUrl) URL.revokeObjectURL(thumbUrl);
+        thumbUrl = "";
+        thumb.removeAttribute("src");
+        thumbWrap.hidden = true;
+        clearPhotoButton.hidden = true;
+        cameraInput.value = "";
+        libraryInput.value = "";
+        setStatus("Photo removed.");
+      }
+
+      async function retouch() {
+        if (!selectedFile) {
+          setStatus("Take or choose a photo first.", true);
+          return;
+        }
+        const prompt = promptInput.value.trim();
+        if (!prompt) {
+          setStatus("Write a retouch prompt first.", true);
+          return;
+        }
+
+        submitButton.disabled = true;
+        preview.hidden = true;
+        imageLink.hidden = true;
+        saveHint.hidden = true;
+
+        try {
+          localStorage.setItem(STORAGE_KEY, falKeyInput.value.trim());
+
+          setStatus("Uploading photo...");
+          const photoUrl = await uploadFile(selectedFile);
+
+          const editResult = await runFal(
+            editModel.value,
+            { ...editConfig, prompt, image_urls: [photoUrl] },
+            "Retouching"
+          );
+          let finalUrl = firstImageUrl(editResult, "Retouch");
+
+          if (doUpscale.checked) {
+            const upscaleResult = await runFal(
+              upscaleEndpoint.value.trim(),
+              {
+                image_url: finalUrl,
+                upscale_mode: "target",
+                target_resolution: "2160p",
+                noise_scale: 0.1,
+                output_format: "png",
+                sync_mode: false
+              },
+              "Upscaling to 4K"
+            );
+            finalUrl = firstImageUrl(upscaleResult, "Upscale");
+          }
+
+          showResult(finalUrl);
+          setStatus(doUpscale.checked ? "Done. Retouched and upscaled to 4K." : "Done. Retouched.");
+        } catch (error) {
+          setStatus(error.message, true);
+        } finally {
+          submitButton.disabled = false;
+        }
+      }
+
+      falKeyInput.value = localStorage.getItem(STORAGE_KEY) || "";
+      promptInput.value = defaultPrompt;
+
+      saveKeyButton.addEventListener("click", () => {
+        localStorage.setItem(STORAGE_KEY, falKeyInput.value.trim());
+        setStatus("Key saved on this browser.");
+      });
+
+      resetPromptButton.addEventListener("click", () => {
+        promptInput.value = defaultPrompt;
+        setStatus("Prompt reset to default.");
+      });
+
+      cameraButton.addEventListener("click", () => cameraInput.click());
+      libraryButton.addEventListener("click", () => libraryInput.click());
+      cameraInput.addEventListener("change", () => setPhoto(cameraInput.files?.[0]));
+      libraryInput.addEventListener("change", () => setPhoto(libraryInput.files?.[0]));
+      clearPhotoButton.addEventListener("click", clearPhoto);
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        retouch();
+      });
+    </script>
+  </body>
+</html>
