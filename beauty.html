@@ -194,6 +194,15 @@
         accent-color: var(--accent);
       }
 
+      input[type="range"] {
+        padding: 0;
+      }
+
+      .rangeValue {
+        color: var(--text);
+        font-weight: 700;
+      }
+
       details summary {
         color: var(--muted);
         font-size: 13px;
@@ -225,7 +234,7 @@
       <section class="header">
         <p class="eyebrow"><a href="./">&larr; Fal Direct</a></p>
         <h1>Beauty Retouch</h1>
-        <p class="sub">Take or pick a photo, retouch it, upscale to 4K.</p>
+        <p class="sub">Take or pick a photo and retouch it. 4K upscale is optional.</p>
       </section>
 
       <form id="beautyForm" class="promptPanel">
@@ -264,8 +273,13 @@
           </div>
         </section>
 
+        <label>
+          Megapixels <span id="megapixelsValue" class="rangeValue">0.5 MP</span>
+          <input id="megapixels" type="range" min="0.5" max="4" step="0.5" value="0.5" />
+        </label>
+
         <div class="checkRow">
-          <input id="doUpscale" type="checkbox" checked />
+          <input id="doUpscale" type="checkbox" />
           <label for="doUpscale">Upscale result to 4K</label>
         </div>
 
@@ -312,26 +326,16 @@
         "Even out and smooth the skin tone while keeping realistic skin texture and visible pores.",
         "Remove freckles, blemishes and spots. Remove under-eye bags and dark circles.",
         "Gently slim the face and body contour. Brighten and sharpen the eyes.",
+        "Matte, non-oily skin finish. Remove shine and greasy highlights, no sweaty or oily look.",
         "Keep the identity, facial features, pose, clothing, lighting and background exactly the same.",
         "Photorealistic result. No plastic or over-smoothed skin, no airbrushed look."
       ].join(" ");
 
       const editModels = {
-        "ideogram/v4/image-to-image": {
-          label: "Ideogram v4 Image to Image",
-          imageField: "image_url",
-          config: {
-            strength: 0.85,
-            rendering_speed: "QUALITY",
-            num_images: 1,
-            sync_mode: false,
-            enable_safety_checker: false,
-            output_format: "png"
-          }
-        },
         "fal-ai/flux-2/edit": {
           label: "Flux 2 Dev Edit",
           imageField: "image_urls",
+          supportsMegapixels: true,
           config: {
             num_images: 1,
             output_format: "png",
@@ -342,14 +346,42 @@
         "fal-ai/flux-2/klein/9b/edit": {
           label: "Flux 2 Klein 9B Edit",
           imageField: "image_urls",
+          supportsMegapixels: true,
           config: {
             num_images: 1,
             output_format: "png",
             sync_mode: false,
             enable_safety_checker: false
           }
+        },
+        "ideogram/v4/image-to-image": {
+          label: "Ideogram v4 Image to Image",
+          imageField: "image_url",
+          supportsMegapixels: false,
+          config: {
+            strength: 0.85,
+            rendering_speed: "QUALITY",
+            num_images: 1,
+            sync_mode: false,
+            enable_safety_checker: false,
+            output_format: "png"
+          }
         }
       };
+
+      function snapToModelSize(value) {
+        return Math.max(512, Math.round(value / 64) * 64);
+      }
+
+      function imageSizeForMegapixels(aspect, megapixels) {
+        const pixels = megapixels * 1_000_000;
+        const rawHeight = Math.sqrt(pixels / aspect);
+        const rawWidth = rawHeight * aspect;
+        return {
+          width: snapToModelSize(rawWidth),
+          height: snapToModelSize(rawHeight)
+        };
+      }
 
       const form = document.querySelector("#beautyForm");
       const falKeyInput = document.querySelector("#falKey");
@@ -365,6 +397,8 @@
       const thumb = document.querySelector("#thumb");
       const photoName = document.querySelector("#photoName");
       const doUpscale = document.querySelector("#doUpscale");
+      const megapixelsInput = document.querySelector("#megapixels");
+      const megapixelsValue = document.querySelector("#megapixelsValue");
       const editModel = document.querySelector("#editModel");
       const configInput = document.querySelector("#config");
       const upscaleEndpoint = document.querySelector("#upscaleEndpoint");
@@ -376,6 +410,7 @@
 
       let selectedFile = null;
       let thumbUrl = "";
+      let photoAspect = 1;
 
       function setStatus(message, isError = false) {
         statusEl.textContent = message;
@@ -496,6 +531,15 @@
         clearPhotoButton.hidden = false;
         photoName.textContent = file.name || "Photo ready";
         setStatus("Photo ready. Tap Retouch photo.");
+
+        const probe = new Image();
+        probe.onload = () => {
+          if (probe.naturalWidth && probe.naturalHeight) {
+            photoAspect = probe.naturalWidth / probe.naturalHeight;
+            setConfigForModel();
+          }
+        };
+        probe.src = thumbUrl;
       }
 
       function clearPhoto() {
@@ -568,7 +612,15 @@
 
       function setConfigForModel() {
         const model = editModels[editModel.value];
-        configInput.value = JSON.stringify(model?.config || {}, null, 2);
+        const nextConfig = { ...(model?.config || {}) };
+        if (model?.supportsMegapixels) {
+          nextConfig.image_size = imageSizeForMegapixels(photoAspect, Number(megapixelsInput.value));
+        }
+        configInput.value = JSON.stringify(nextConfig, null, 2);
+      }
+
+      function updateMegapixelsLabel() {
+        megapixelsValue.textContent = `${Number(megapixelsInput.value).toFixed(1)} MP`;
       }
 
       for (const [id, model] of Object.entries(editModels)) {
@@ -580,9 +632,14 @@
 
       falKeyInput.value = localStorage.getItem(STORAGE_KEY) || "";
       promptInput.value = defaultPrompt;
+      updateMegapixelsLabel();
       setConfigForModel();
 
       editModel.addEventListener("change", setConfigForModel);
+      megapixelsInput.addEventListener("input", () => {
+        updateMegapixelsLabel();
+        setConfigForModel();
+      });
 
       saveKeyButton.addEventListener("click", () => {
         localStorage.setItem(STORAGE_KEY, falKeyInput.value.trim());
