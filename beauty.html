@@ -317,22 +317,11 @@
       ].join(" ");
 
       const editModels = {
-        "ideogram/v4/remix": {
-          label: "Ideogram v4 Remix",
+        "ideogram/v4/image-to-image": {
+          label: "Ideogram v4 Image to Image",
           imageField: "image_url",
           config: {
-            rendering_speed: "QUALITY",
-            image_weight: 85,
-            num_images: 1,
-            sync_mode: false,
-            enable_safety_checker: false,
-            output_format: "png"
-          }
-        },
-        "ideogram/v4/edit": {
-          label: "Ideogram v4 Edit",
-          imageField: "image_url",
-          config: {
+            strength: 0.85,
             rendering_speed: "QUALITY",
             num_images: 1,
             sync_mode: false,
