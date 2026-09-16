@@ -274,11 +274,12 @@
           <div class="controlGrid">
             <label>
               Edit model
-              <select id="editModel">
-                <option value="fal-ai/flux-2/edit" selected>Flux 2 Dev Edit</option>
-                <option value="fal-ai/flux-2/klein/9b/edit">Flux 2 Klein 9B Edit</option>
-                <option value="fal-ai/flux-2/klein/9b/base/edit">Flux 2 Klein 9B Base Edit</option>
-              </select>
+              <select id="editModel"></select>
+            </label>
+
+            <label>
+              Config JSON
+              <textarea id="config" rows="8" spellcheck="false"></textarea>
             </label>
 
             <label>
@@ -315,11 +316,50 @@
         "Photorealistic result. No plastic or over-smoothed skin, no airbrushed look."
       ].join(" ");
 
-      const editConfig = {
-        num_images: 1,
-        output_format: "png",
-        sync_mode: false,
-        enable_safety_checker: false
+      const editModels = {
+        "ideogram/v4/remix": {
+          label: "Ideogram v4 Remix",
+          imageField: "image_url",
+          config: {
+            rendering_speed: "QUALITY",
+            image_weight: 85,
+            num_images: 1,
+            sync_mode: false,
+            enable_safety_checker: false,
+            output_format: "png"
+          }
+        },
+        "ideogram/v4/edit": {
+          label: "Ideogram v4 Edit",
+          imageField: "image_url",
+          config: {
+            rendering_speed: "QUALITY",
+            num_images: 1,
+            sync_mode: false,
+            enable_safety_checker: false,
+            output_format: "png"
+          }
+        },
+        "fal-ai/flux-2/edit": {
+          label: "Flux 2 Dev Edit",
+          imageField: "image_urls",
+          config: {
+            num_images: 1,
+            output_format: "png",
+            sync_mode: false,
+            enable_safety_checker: false
+          }
+        },
+        "fal-ai/flux-2/klein/9b/edit": {
+          label: "Flux 2 Klein 9B Edit",
+          imageField: "image_urls",
+          config: {
+            num_images: 1,
+            output_format: "png",
+            sync_mode: false,
+            enable_safety_checker: false
+          }
+        }
       };
 
       const form = document.querySelector("#beautyForm");
@@ -337,6 +377,7 @@
       const photoName = document.querySelector("#photoName");
       const doUpscale = document.querySelector("#doUpscale");
       const editModel = document.querySelector("#editModel");
+      const configInput = document.querySelector("#config");
       const upscaleEndpoint = document.querySelector("#upscaleEndpoint");
       const submitButton = document.querySelector("#submitButton");
       const statusEl = document.querySelector("#status");
@@ -502,11 +543,13 @@
           setStatus("Uploading photo...");
           const photoUrl = await uploadFile(selectedFile);
 
-          const editResult = await runFal(
-            editModel.value,
-            { ...editConfig, prompt, image_urls: [photoUrl] },
-            "Retouching"
-          );
+          const endpointId = editModel.value;
+          const input = JSON.parse(configInput.value || "{}");
+          input.prompt = prompt;
+          const imageField = editModels[endpointId]?.imageField || "image_urls";
+          input[imageField] = imageField === "image_urls" ? [photoUrl] : photoUrl;
+
+          const editResult = await runFal(endpointId, input, "Retouching");
           let finalUrl = firstImageUrl(editResult, "Retouch");
 
           if (doUpscale.checked) {
@@ -534,8 +577,23 @@
         }
       }
 
+      function setConfigForModel() {
+        const model = editModels[editModel.value];
+        configInput.value = JSON.stringify(model?.config || {}, null, 2);
+      }
+
+      for (const [id, model] of Object.entries(editModels)) {
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = model.label;
+        editModel.append(option);
+      }
+
       falKeyInput.value = localStorage.getItem(STORAGE_KEY) || "";
       promptInput.value = defaultPrompt;
+      setConfigForModel();
+
+      editModel.addEventListener("change", setConfigForModel);
 
       saveKeyButton.addEventListener("click", () => {
         localStorage.setItem(STORAGE_KEY, falKeyInput.value.trim());
