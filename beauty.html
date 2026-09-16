@@ -227,6 +227,49 @@
         text-decoration: none;
         font-weight: 800;
       }
+
+      .presetButton {
+        width: 100%;
+        border: 1px solid var(--line);
+        background: #243040;
+        color: var(--text);
+      }
+
+      .galleryGrid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .galleryItem {
+        display: grid;
+        gap: 3px;
+        padding: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #111720;
+        color: var(--text);
+        overflow: hidden;
+        text-align: left;
+        cursor: pointer;
+        -webkit-tap-highlight-color: rgba(52, 178, 122, 0.22);
+      }
+
+      .galleryItem img {
+        aspect-ratio: 1;
+        object-fit: cover;
+        border: 0;
+        border-radius: 0;
+      }
+
+      .galleryItem span {
+        padding: 0 4px 5px;
+        color: var(--muted);
+        font-size: 10px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
     </style>
   </head>
   <body>
@@ -313,11 +356,22 @@
           <a id="imageLink" hidden target="_blank" rel="noopener">Open full image</a>
         </div>
         <p id="saveHint" class="hint" hidden>Long-press the image to save it to your photos.</p>
+        <button id="upscaleNowButton" class="presetButton" type="button" hidden>Upscale to 4K</button>
+      </section>
+
+      <section class="resultPanel">
+        <div class="panelHeader">
+          <h2>Last 10 Photos</h2>
+          <button id="clearGalleryButton" class="smallButton" type="button">Clear</button>
+        </div>
+        <div id="galleryGrid" class="galleryGrid" aria-live="polite"></div>
       </section>
     </main>
 
     <script>
       const STORAGE_KEY = "iphoneFalDirect.key";
+      const HISTORY_KEY = "iphoneFalDirect.beautyHistory.v1";
+      const HISTORY_LIMIT = 10;
       const REST_API = "https://rest.fal.ai";
       const QUEUE_API = "https://queue.fal.run";
 
@@ -407,10 +461,14 @@
       const preview = document.querySelector("#preview");
       const imageLink = document.querySelector("#imageLink");
       const saveHint = document.querySelector("#saveHint");
+      const upscaleNowButton = document.querySelector("#upscaleNowButton");
+      const galleryGrid = document.querySelector("#galleryGrid");
+      const clearGalleryButton = document.querySelector("#clearGalleryButton");
 
       let selectedFile = null;
       let thumbUrl = "";
       let photoAspect = 1;
+      let currentImageUrl = "";
 
       function setStatus(message, isError = false) {
         statusEl.textContent = message;
@@ -514,11 +572,90 @@
       }
 
       function showResult(url) {
+        currentImageUrl = url;
         preview.src = url;
         preview.hidden = false;
         imageLink.href = url;
         imageLink.hidden = false;
         saveHint.hidden = false;
+        upscaleNowButton.hidden = false;
+      }
+
+      function loadHistory() {
+        try {
+          const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+          return Array.isArray(history) ? history : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function saveHistory(history) {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, HISTORY_LIMIT)));
+        renderGallery();
+      }
+
+      function addHistoryEntry(entry) {
+        saveHistory([
+          {
+            id: crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            createdAt: new Date().toISOString(),
+            ...entry
+          },
+          ...loadHistory()
+        ]);
+      }
+
+      function galleryLabel(entry) {
+        const date = new Date(entry.createdAt);
+        if (Number.isNaN(date.getTime())) return "Saved";
+        return date.toLocaleString([], {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+
+      function restoreEntry(entry) {
+        if (!entry.url) return;
+        showResult(entry.url);
+        setStatus(`Loaded from history: ${entry.model || "fal"}`);
+      }
+
+      function renderGallery() {
+        const history = loadHistory();
+        galleryGrid.textContent = "";
+        if (!history.length) {
+          galleryGrid.textContent = "No generated history yet.";
+          return;
+        }
+        for (const entry of history) {
+          if (!entry.url) continue;
+          const item = document.createElement("article");
+          item.className = "galleryItem";
+          item.tabIndex = 0;
+          item.setAttribute("role", "button");
+
+          const image = document.createElement("img");
+          image.src = entry.url;
+          image.alt = "";
+          image.loading = "lazy";
+
+          const label = document.createElement("span");
+          label.textContent = `${galleryLabel(entry)} | ${entry.model || "fal"}`;
+
+          const restore = () => restoreEntry(entry);
+          item.append(image, label);
+          item.addEventListener("click", restore);
+          item.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              restore();
+            }
+          });
+          galleryGrid.append(item);
+        }
       }
 
       function setPhoto(file) {
@@ -584,6 +721,7 @@
 
           const editResult = await runFal(endpointId, input, "Retouching");
           let finalUrl = firstImageUrl(editResult, "Retouch");
+          let usedModel = endpointId;
 
           if (doUpscale.checked) {
             const upscaleResult = await runFal(
@@ -599,14 +737,52 @@
               "Upscaling to 4K"
             );
             finalUrl = firstImageUrl(upscaleResult, "Upscale");
+            usedModel = upscaleEndpoint.value.trim();
           }
 
           showResult(finalUrl);
+          addHistoryEntry({ model: usedModel, prompt, url: finalUrl });
           setStatus(doUpscale.checked ? "Done. Retouched and upscaled to 4K." : "Done. Retouched.");
         } catch (error) {
           setStatus(error.message, true);
         } finally {
           submitButton.disabled = false;
+        }
+      }
+
+      async function upscaleCurrentImage() {
+        if (!currentImageUrl) {
+          setStatus("Generate or choose a photo from history first.", true);
+          return;
+        }
+
+        submitButton.disabled = true;
+        upscaleNowButton.disabled = true;
+        setStatus("Upscaling to 4K...");
+
+        try {
+          const endpointId = upscaleEndpoint.value.trim();
+          const upscaleResult = await runFal(
+            endpointId,
+            {
+              image_url: currentImageUrl,
+              upscale_mode: "target",
+              target_resolution: "2160p",
+              noise_scale: 0.1,
+              output_format: "png",
+              sync_mode: false
+            },
+            "Upscaling to 4K"
+          );
+          const finalUrl = firstImageUrl(upscaleResult, "Upscale");
+          showResult(finalUrl);
+          addHistoryEntry({ model: endpointId, prompt: "4K upscale", url: finalUrl });
+          setStatus("Done. Upscaled to 4K.");
+        } catch (error) {
+          setStatus(error.message, true);
+        } finally {
+          submitButton.disabled = false;
+          upscaleNowButton.disabled = false;
         }
       }
 
@@ -634,6 +810,7 @@
       promptInput.value = defaultPrompt;
       updateMegapixelsLabel();
       setConfigForModel();
+      renderGallery();
 
       editModel.addEventListener("change", setConfigForModel);
       megapixelsInput.addEventListener("input", () => {
@@ -660,6 +837,13 @@
       form.addEventListener("submit", (event) => {
         event.preventDefault();
         retouch();
+      });
+
+      upscaleNowButton.addEventListener("click", upscaleCurrentImage);
+      clearGalleryButton.addEventListener("click", () => {
+        localStorage.removeItem(HISTORY_KEY);
+        renderGallery();
+        setStatus("History cleared.");
       });
     </script>
   </body>
