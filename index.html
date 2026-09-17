@@ -263,6 +263,10 @@
           <button id="airlineTrayKameezPreset" class="presetButton" type="button">Airline tray kameez</button>
         </div>
 
+        <div class="presetRow">
+          <button id="batikKameezPreset" class="presetButton" type="button">+ Batik kameez</button>
+        </div>
+
         <section class="controlPanel">
           <h2>Camera Controls</h2>
           <div class="controlGrid">
@@ -394,6 +398,7 @@
       const promptInput = document.querySelector("#prompt");
       const handwashKameezPreset = document.querySelector("#handwashKameezPreset");
       const airlineTrayKameezPreset = document.querySelector("#airlineTrayKameezPreset");
+      const batikKameezPreset = document.querySelector("#batikKameezPreset");
       const apertureInput = document.querySelector("#aperture");
       const apertureValue = document.querySelector("#apertureValue");
       const focalLengthInput = document.querySelector("#focalLength");
@@ -437,6 +442,20 @@
         "Camera flash lights the entire scene.",
         "Her chest is flat, almost boyish body shape.",
         "She smiles warmly to camera."
+      ].join(" ");
+
+      const batikKameezPrompt = [
+        "Full-body front-view studio fashion photo of a woman wearing a traditional Southeast Asian two-piece batik outfit.",
+        "Deep royal cobalt-blue fabric. Fitted hip-length blouse with a wide rounded scoop neckline. Straight three-quarter sleeves.",
+        "Matching long straight ankle-length skirt with a narrow column silhouette.",
+        "The blouse has a symmetrical front design with two large vertical rectangular ornamental border panels running down the front beside the center opening.",
+        "The skirt also has a prominent central vertical ornamental border panel.",
+        "Borders are highly detailed with cream, black, rust red, burnt orange, mustard gold, and tiny multicolor geometric square patterns.",
+        "The fabric is covered in dense intricate batik motifs with stylized peacocks, exotic birds, tropical flowers, curling vines, leaves, paisley-like botanical forms, and ornamental scrollwork.",
+        "Every motif is outlined with very fine golden-brown dotted batik detailing. Rich handcrafted textile look. No large empty areas. Very ornate and luxurious.",
+        "Color palette: cobalt blue base, dark navy, burnt orange, terracotta red, rust red, burgundy, mustard gold, emerald green, turquoise, muted purple, cream, black.",
+        "Matte premium batik fabric, crisp textile print, realistic woven texture, elegant heritage fashion, highly detailed, symmetrical, refined, traditional formal attire.",
+        "Plain light neutral background. Clean fashion catalog look. Sharp details. Realistic fabric folds."
       ].join(" ");
 
       const defaultConfig = {
@@ -1151,6 +1170,12 @@
         promptInput.value = airlineTrayKameezPrompt;
         promptInput.focus();
         setStatus("Airline tray kameez prompt loaded.");
+      });
+      batikKameezPreset.addEventListener("click", () => {
+        const existing = promptInput.value.trim();
+        promptInput.value = existing ? `${existing}\n\n${batikKameezPrompt}` : batikKameezPrompt;
+        promptInput.focus();
+        setStatus("Batik kameez description added to prompt.");
       });
       form.addEventListener("submit", (event) => {
         event.preventDefault();
