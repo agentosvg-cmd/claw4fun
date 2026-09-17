@@ -267,6 +267,10 @@
           <button id="batikKameezPreset" class="presetButton" type="button">+ Batik kameez</button>
         </div>
 
+        <div class="presetRow">
+          <button id="bedSheetKameezPreset" class="presetButton" type="button">Bed sheet kameez</button>
+        </div>
+
         <section class="controlPanel">
           <h2>Camera Controls</h2>
           <div class="controlGrid">
@@ -399,6 +403,7 @@
       const handwashKameezPreset = document.querySelector("#handwashKameezPreset");
       const airlineTrayKameezPreset = document.querySelector("#airlineTrayKameezPreset");
       const batikKameezPreset = document.querySelector("#batikKameezPreset");
+      const bedSheetKameezPreset = document.querySelector("#bedSheetKameezPreset");
       const apertureInput = document.querySelector("#aperture");
       const apertureValue = document.querySelector("#apertureValue");
       const focalLengthInput = document.querySelector("#focalLength");
@@ -456,6 +461,15 @@
         "Color palette: cobalt blue base, dark navy, burnt orange, terracotta red, rust red, burgundy, mustard gold, emerald green, turquoise, muted purple, cream, black.",
         "Matte premium batik fabric, crisp textile print, realistic woven texture, elegant heritage fashion, highly detailed, symmetrical, refined, traditional formal attire.",
         "Plain light neutral background. Clean fashion catalog look. Sharp details. Realistic fabric folds."
+      ].join(" ");
+
+      const bedSheetKameezPrompt = [
+        "Chinese woman wearing a dramatic embroidered kameez with an extremely large square low-cut neckline, standing beside the bed tidying up the bed sheet.",
+        "She bends forward 90 degrees to reach out and pull the bed sheet taut.",
+        "Follow the image reference posture 100%.",
+        "Camera flash lights the entire scene.",
+        "Her chest is flat, almost boyish body shape.",
+        "She smiles warmly to camera."
       ].join(" ");
 
       const defaultConfig = {
@@ -1176,6 +1190,11 @@
         promptInput.value = existing ? `${existing}\n\n${batikKameezPrompt}` : batikKameezPrompt;
         promptInput.focus();
         setStatus("Batik kameez description added to prompt.");
+      });
+      bedSheetKameezPreset.addEventListener("click", () => {
+        promptInput.value = bedSheetKameezPrompt;
+        promptInput.focus();
+        setStatus("Bed sheet kameez prompt loaded.");
       });
       form.addEventListener("submit", (event) => {
         event.preventDefault();
