@@ -389,13 +389,17 @@
           <a id="imageLink" hidden>Open image</a>
           <a id="saveLink" hidden>Save image</a>
         </div>
-        <label id="videoPromptLabel" hidden>
+        <label>
+          Upload image for video
+          <input id="videoSource" type="file" accept="image/*" />
+        </label>
+        <label id="videoPromptLabel">
           Describe the motion (optional)
           <input id="videoPrompt" type="text" placeholder="Subtle natural motion, camera holds steady." />
         </label>
         <div class="mediaActions">
           <button id="upscaleButton" class="presetButton" type="button" hidden>Upscale 4K</button>
-          <button id="videoButton" class="presetButton" type="button" hidden>Video</button>
+          <button id="videoButton" class="presetButton" type="button">Video</button>
         </div>
         <video id="videoPreview" controls autoplay loop muted playsinline hidden></video>
         <div class="resultActions">
@@ -456,6 +460,7 @@
       const saveLink = document.querySelector("#saveLink");
       const upscaleButton = document.querySelector("#upscaleButton");
       const videoButton = document.querySelector("#videoButton");
+      const videoSourceInput = document.querySelector("#videoSource");
       const videoPromptLabel = document.querySelector("#videoPromptLabel");
       const videoPromptInput = document.querySelector("#videoPrompt");
       const videoPreview = document.querySelector("#videoPreview");
@@ -1189,8 +1194,9 @@
       }
 
       async function generateVideo() {
-        if (!currentImageUrl) {
-          setStatus("Generate or choose an image first.", true);
+        const uploadedFile = videoSourceInput.files?.[0];
+        if (!uploadedFile && !currentImageUrl) {
+          setStatus("Upload an image or generate one first.", true);
           return;
         }
 
@@ -1200,13 +1206,21 @@
         upscaleButton.disabled = true;
         videoButton.disabled = true;
         videoButton.textContent = "Generating video… ($0.25)";
-        setStatus("Generating 5-second video with MiniMax H3...");
 
         try {
+          localStorage.setItem(STORAGE_KEY, falKeyInput.value.trim());
+          let sourceImageUrl = currentImageUrl;
+          if (uploadedFile) {
+            setStatus("Uploading image for video...");
+            sourceImageUrl = await uploadFile(uploadedFile);
+            showImage(sourceImageUrl);
+          }
+
+          setStatus("Generating 5-second video with MiniMax H3...");
           const endpointId = "minimax/h3/image-to-video";
           const result = await runFal(endpointId, {
             prompt,
-            image_url: currentImageUrl,
+            image_url: sourceImageUrl,
             duration: 5,
             resolution: "480P",
             prompt_expansion_mode: "fast",
@@ -1219,7 +1233,7 @@
           addHistoryEntry({
             model: endpointId,
             prompt,
-            sourceImageUrl: currentImageUrl,
+            sourceImageUrl,
             videos: [{ url: videoUrl }]
           });
           setStatus("Done. 5-second video generated and saved to media history.");
