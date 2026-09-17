@@ -272,10 +272,6 @@
         </div>
 
         <div class="presetRow">
-          <button id="braEdgePreset" class="presetButton" type="button">+ Bra edge visible</button>
-        </div>
-
-        <div class="presetRow">
           <button id="clearPromptButton" class="presetButton" type="button">Clear prompt</button>
         </div>
 
@@ -412,7 +408,6 @@
       const airlineTrayKameezPreset = document.querySelector("#airlineTrayKameezPreset");
       const batikKameezPreset = document.querySelector("#batikKameezPreset");
       const bedSheetKameezPreset = document.querySelector("#bedSheetKameezPreset");
-      const braEdgePreset = document.querySelector("#braEdgePreset");
       const clearPromptButton = document.querySelector("#clearPromptButton");
       const apertureInput = document.querySelector("#aperture");
       const apertureValue = document.querySelector("#apertureValue");
@@ -457,13 +452,6 @@
         "Camera flash lights the entire scene.",
         "Her chest is flat, almost boyish body shape.",
         "She smiles warmly to camera."
-      ].join(" ");
-
-      const braEdgePrompt = [
-        "She is wearing a pink floral lace bra underneath, with a delicate scalloped lace edge and sheer underwire cups showing a fine floral lace pattern throughout.",
-        "Thin adjustable straps finished in matching lace trim. A small navy-blue ribbon bow sits at the center front gore between the cups. Soft blush-pink tone, lightweight and semi-sheer lace texture.",
-        "The bra edge is slightly visible peeking at the low-cut neckline, not fully concealed and not fully exposed.",
-        "Natural fit, realistic fabric contact with skin, soft lace texture detail visible at the edge."
       ].join(" ");
 
       const batikKameezPrompt = [
@@ -1212,12 +1200,6 @@
         promptInput.value = bedSheetKameezPrompt;
         promptInput.focus();
         setStatus("Bed sheet kameez prompt loaded.");
-      });
-      braEdgePreset.addEventListener("click", () => {
-        const existing = promptInput.value.trim();
-        promptInput.value = existing ? `${existing}\n\n${braEdgePrompt}` : braEdgePrompt;
-        promptInput.focus();
-        setStatus("Bra edge description added to prompt.");
       });
       clearPromptButton.addEventListener("click", () => {
         promptInput.value = "";
