@@ -178,7 +178,8 @@
         gap: 10px;
       }
 
-      .resultActions a {
+      .resultActions a,
+      .resultActions button {
         min-height: 42px;
         display: inline-flex;
         align-items: center;
@@ -217,7 +218,8 @@
         -webkit-tap-highlight-color: rgba(52, 178, 122, 0.22);
       }
 
-      .galleryItem img {
+      .galleryItem img,
+      .galleryItem video {
         aspect-ratio: 1;
         object-fit: cover;
         border: 0;
@@ -396,12 +398,15 @@
           <button id="videoButton" class="presetButton" type="button" hidden>Video</button>
         </div>
         <video id="videoPreview" controls autoplay loop muted playsinline hidden></video>
-        <a id="videoDownloadLink" hidden>Download video</a>
+        <div class="resultActions">
+          <a id="videoOpenLink" target="_blank" rel="noopener" hidden>Open video</a>
+          <button id="videoDownloadButton" type="button" hidden>Download video</button>
+        </div>
       </section>
 
       <section class="resultPanel">
         <div class="panelHeader">
-          <h2>Last 10 Photos</h2>
+          <h2>Last 10 Media</h2>
           <button id="clearGalleryButton" class="smallButton" type="button">Clear</button>
         </div>
         <div id="galleryGrid" class="galleryGrid" aria-live="polite"></div>
@@ -454,10 +459,12 @@
       const videoPromptLabel = document.querySelector("#videoPromptLabel");
       const videoPromptInput = document.querySelector("#videoPrompt");
       const videoPreview = document.querySelector("#videoPreview");
-      const videoDownloadLink = document.querySelector("#videoDownloadLink");
+      const videoOpenLink = document.querySelector("#videoOpenLink");
+      const videoDownloadButton = document.querySelector("#videoDownloadButton");
       const galleryGrid = document.querySelector("#galleryGrid");
       const clearGalleryButton = document.querySelector("#clearGalleryButton");
       let currentImageUrl = "";
+      let currentVideoUrl = "";
 
       const handwashKameezPrompt = [
         "Chinese Woman in shoulder dramatic extremely large square low cut embroidered kameez washing hand.",
@@ -976,12 +983,24 @@
       }
 
       function resetVideoOutput() {
+        currentVideoUrl = "";
         videoPreview.pause();
         videoPreview.removeAttribute("src");
         videoPreview.load();
         videoPreview.hidden = true;
-        videoDownloadLink.hidden = true;
-        videoDownloadLink.removeAttribute("href");
+        videoOpenLink.hidden = true;
+        videoOpenLink.removeAttribute("href");
+        videoDownloadButton.hidden = true;
+      }
+
+      function showVideo(url) {
+        currentVideoUrl = url;
+        videoPreview.src = url;
+        videoPreview.hidden = false;
+        videoOpenLink.href = url;
+        videoOpenLink.hidden = false;
+        videoDownloadButton.hidden = false;
+        videoPreview.play().catch(() => {});
       }
 
       function showImage(url) {
@@ -1015,38 +1034,63 @@
         return image?.url || "";
       }
 
+      function firstHistoryVideo(entry) {
+        const video = entry.videos?.find((item) => item?.url);
+        return video?.url || "";
+      }
+
       function restoreEntry(entry) {
-        const url = firstHistoryImage(entry);
-        if (!url) return;
-        showImage(url);
-        setStatus(`Loaded from history: ${entry.model || "fal"}`);
+        const videoUrl = firstHistoryVideo(entry);
+        if (videoUrl) {
+          if (entry.sourceImageUrl) showImage(entry.sourceImageUrl);
+          showVideo(videoUrl);
+          setStatus(`Loaded video from history: ${entry.model || "fal"}`);
+          return;
+        }
+
+        const imageUrl = firstHistoryImage(entry);
+        if (!imageUrl) return;
+        showImage(imageUrl);
+        setStatus(`Loaded image from history: ${entry.model || "fal"}`);
       }
 
       function renderGallery() {
         const history = loadHistory();
         galleryGrid.textContent = "";
         if (!history.length) {
-          galleryGrid.textContent = "No generated history yet.";
+          galleryGrid.textContent = "No generated media yet.";
           return;
         }
         for (const entry of history) {
-          const url = firstHistoryImage(entry);
-          if (!url) continue;
+          const videoUrl = firstHistoryVideo(entry);
+          const imageUrl = firstHistoryImage(entry);
+          if (!videoUrl && !imageUrl) continue;
           const item = document.createElement("article");
           item.className = "galleryItem";
           item.tabIndex = 0;
           item.setAttribute("role", "button");
 
-          const image = document.createElement("img");
-          image.src = url;
-          image.alt = "";
-          image.loading = "lazy";
+          let media;
+          if (videoUrl) {
+            media = document.createElement("video");
+            media.src = videoUrl;
+            media.muted = true;
+            media.playsInline = true;
+            media.preload = "metadata";
+            if (entry.sourceImageUrl) media.poster = entry.sourceImageUrl;
+          } else {
+            media = document.createElement("img");
+            media.src = imageUrl;
+            media.alt = "";
+            media.loading = "lazy";
+          }
 
           const label = document.createElement("span");
-          label.textContent = `${galleryLabel(entry)} | ${entry.model || "fal"}`;
+          const mediaType = videoUrl ? "Video" : "Image";
+          label.textContent = `${mediaType} | ${galleryLabel(entry)}`;
 
           const restore = () => restoreEntry(entry);
-          item.append(image, label);
+          item.append(media, label);
           item.addEventListener("click", restore);
           item.addEventListener("keydown", (event) => {
             if (event.key === "Enter" || event.key === " ") {
@@ -1171,13 +1215,14 @@
           const videoUrl = collectVideoUrl(result);
           if (!videoUrl) throw new Error("MiniMax H3 returned no video URL.");
 
-          videoPreview.src = videoUrl;
-          videoPreview.hidden = false;
-          videoDownloadLink.href = videoUrl;
-          videoDownloadLink.download = `fal-video-${Date.now()}.mp4`;
-          videoDownloadLink.hidden = false;
-          videoPreview.play().catch(() => {});
-          setStatus("Done. 5-second video generated.");
+          showVideo(videoUrl);
+          addHistoryEntry({
+            model: endpointId,
+            prompt,
+            sourceImageUrl: currentImageUrl,
+            videos: [{ url: videoUrl }]
+          });
+          setStatus("Done. 5-second video generated and saved to media history.");
         } catch (error) {
           setStatus(error.message, true);
         } finally {
@@ -1185,6 +1230,37 @@
           upscaleButton.disabled = false;
           videoButton.disabled = false;
           videoButton.textContent = originalLabel;
+        }
+      }
+
+      async function downloadCurrentVideo() {
+        if (!currentVideoUrl) {
+          setStatus("Generate or choose a video first.", true);
+          return;
+        }
+
+        const originalLabel = videoDownloadButton.textContent;
+        videoDownloadButton.disabled = true;
+        videoDownloadButton.textContent = "Downloading…";
+
+        try {
+          const response = await fetch(currentVideoUrl);
+          if (!response.ok) throw new Error(`Download failed (${response.status}).`);
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          const downloadLink = document.createElement("a");
+          downloadLink.href = blobUrl;
+          downloadLink.download = `fal-video-${Date.now()}.mp4`;
+          document.body.append(downloadLink);
+          downloadLink.click();
+          downloadLink.remove();
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+          setStatus("Video download started.");
+        } catch (error) {
+          setStatus(`${error.message} Use Open video, then Share or Save to Files.`, true);
+        } finally {
+          videoDownloadButton.disabled = false;
+          videoDownloadButton.textContent = originalLabel;
         }
       }
 
@@ -1309,6 +1385,7 @@
       });
       upscaleButton.addEventListener("click", upscaleCurrentImage);
       videoButton.addEventListener("click", generateVideo);
+      videoDownloadButton.addEventListener("click", downloadCurrentVideo);
       clearGalleryButton.addEventListener("click", () => {
         localStorage.removeItem(HISTORY_KEY);
         renderGallery();
