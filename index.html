@@ -259,6 +259,10 @@
           <button id="handwashKameezPreset" class="presetButton" type="button">Handwash kameez</button>
         </div>
 
+        <div class="presetRow">
+          <button id="airlineTrayKameezPreset" class="presetButton" type="button">Airline tray kameez</button>
+        </div>
+
         <section class="controlPanel">
           <h2>Camera Controls</h2>
           <div class="controlGrid">
@@ -389,6 +393,7 @@
       const forgetKeyButton = document.querySelector("#forgetKeyButton");
       const promptInput = document.querySelector("#prompt");
       const handwashKameezPreset = document.querySelector("#handwashKameezPreset");
+      const airlineTrayKameezPreset = document.querySelector("#airlineTrayKameezPreset");
       const apertureInput = document.querySelector("#aperture");
       const apertureValue = document.querySelector("#apertureValue");
       const focalLengthInput = document.querySelector("#focalLength");
@@ -423,6 +428,15 @@
         "Follow the image reference posture 100%.",
         "Camera light flashing to entire scene.",
         "Women chest are flat almost in boy body shape."
+      ].join(" ");
+
+      const airlineTrayKameezPrompt = [
+        "Chinese woman wearing a dramatic embroidered kameez with an extremely large square low-cut neckline, kneeling on the airplane and pulling out food halfway from the bottom of the trolley.",
+        "She bends forward 90 degrees to reach out.",
+        "Follow the image reference posture 100%.",
+        "Camera flash lights the entire scene.",
+        "Her chest is flat, almost boyish body shape.",
+        "She smiles warmly to camera."
       ].join(" ");
 
       const defaultConfig = {
@@ -1132,6 +1146,11 @@
         promptInput.value = handwashKameezPrompt;
         promptInput.focus();
         setStatus("Handwash kameez prompt loaded.");
+      });
+      airlineTrayKameezPreset.addEventListener("click", () => {
+        promptInput.value = airlineTrayKameezPrompt;
+        promptInput.focus();
+        setStatus("Airline tray kameez prompt loaded.");
       });
       form.addEventListener("submit", (event) => {
         event.preventDefault();
