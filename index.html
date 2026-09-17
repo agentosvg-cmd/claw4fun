@@ -268,6 +268,10 @@
         </div>
 
         <div class="presetRow">
+          <button id="pinkLaceNecklinePreset" class="presetButton" type="button">+ Pink lace neckline</button>
+        </div>
+
+        <div class="presetRow">
           <button id="bedSheetKameezPreset" class="presetButton" type="button">Bed sheet kameez</button>
         </div>
 
@@ -407,6 +411,7 @@
       const handwashKameezPreset = document.querySelector("#handwashKameezPreset");
       const airlineTrayKameezPreset = document.querySelector("#airlineTrayKameezPreset");
       const batikKameezPreset = document.querySelector("#batikKameezPreset");
+      const pinkLaceNecklinePreset = document.querySelector("#pinkLaceNecklinePreset");
       const bedSheetKameezPreset = document.querySelector("#bedSheetKameezPreset");
       const clearPromptButton = document.querySelector("#clearPromptButton");
       const apertureInput = document.querySelector("#aperture");
@@ -466,6 +471,13 @@
         "Color palette: cobalt blue base, dark navy, burnt orange, terracotta red, rust red, burgundy, mustard gold, emerald green, turquoise, muted purple, cream, black.",
         "Matte premium batik fabric, crisp textile print, realistic woven texture, elegant heritage fashion, highly detailed, symmetrical, refined, traditional formal attire.",
         "Realistic fabric folds."
+      ].join(" ");
+
+      const pinkLaceNecklinePrompt = [
+        "A narrow blush-pink scalloped floral lace trim is visible along the inside edge of the low-cut neckline.",
+        "The lace follows the neckline naturally and remains limited to a thin decorative border.",
+        "A small navy-blue bow detail sits at the center neckline.",
+        "Fully clothed, tasteful fashion styling."
       ].join(" ");
 
       const bedSheetKameezPrompt = [
@@ -1195,6 +1207,12 @@
         promptInput.value = existing ? `${existing}\n\n${batikKameezPrompt}` : batikKameezPrompt;
         promptInput.focus();
         setStatus("Batik kameez description added to prompt.");
+      });
+      pinkLaceNecklinePreset.addEventListener("click", () => {
+        const existing = promptInput.value.trim();
+        promptInput.value = existing ? `${existing}\n\n${pinkLaceNecklinePrompt}` : pinkLaceNecklinePrompt;
+        promptInput.focus();
+        setStatus("Pink lace neckline description added to prompt.");
       });
       bedSheetKameezPreset.addEventListener("click", () => {
         promptInput.value = bedSheetKameezPrompt;
