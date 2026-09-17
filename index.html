@@ -275,6 +275,10 @@
           <button id="braEdgePreset" class="presetButton" type="button">+ Bra edge visible</button>
         </div>
 
+        <div class="presetRow">
+          <button id="clearPromptButton" class="presetButton" type="button">Clear prompt</button>
+        </div>
+
         <section class="controlPanel">
           <h2>Camera Controls</h2>
           <div class="controlGrid">
@@ -409,6 +413,7 @@
       const batikKameezPreset = document.querySelector("#batikKameezPreset");
       const bedSheetKameezPreset = document.querySelector("#bedSheetKameezPreset");
       const braEdgePreset = document.querySelector("#braEdgePreset");
+      const clearPromptButton = document.querySelector("#clearPromptButton");
       const apertureInput = document.querySelector("#aperture");
       const apertureValue = document.querySelector("#apertureValue");
       const focalLengthInput = document.querySelector("#focalLength");
@@ -1213,6 +1218,11 @@
         promptInput.value = existing ? `${existing}\n\n${braEdgePrompt}` : braEdgePrompt;
         promptInput.focus();
         setStatus("Bra edge description added to prompt.");
+      });
+      clearPromptButton.addEventListener("click", () => {
+        promptInput.value = "";
+        promptInput.focus();
+        setStatus("Prompt cleared.");
       });
       form.addEventListener("submit", (event) => {
         event.preventDefault();
