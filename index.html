@@ -159,8 +159,10 @@
         color: var(--danger);
       }
 
-      img {
+      img,
+      video {
         width: 100%;
+        max-width: 100%;
         border-radius: 8px;
         border: 1px solid var(--line);
       }
@@ -169,7 +171,8 @@
         color: #8bd8ff;
       }
 
-      .resultActions {
+      .resultActions,
+      .mediaActions {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
@@ -384,7 +387,16 @@
           <a id="imageLink" hidden>Open image</a>
           <a id="saveLink" hidden>Save image</a>
         </div>
-        <button id="upscaleButton" class="presetButton" type="button" hidden>Upscale 4K</button>
+        <label id="videoPromptLabel" hidden>
+          Describe the motion (optional)
+          <input id="videoPrompt" type="text" placeholder="Subtle natural motion, camera holds steady." />
+        </label>
+        <div class="mediaActions">
+          <button id="upscaleButton" class="presetButton" type="button" hidden>Upscale 4K</button>
+          <button id="videoButton" class="presetButton" type="button" hidden>Video</button>
+        </div>
+        <video id="videoPreview" controls autoplay loop muted playsinline hidden></video>
+        <a id="videoDownloadLink" hidden>Download video</a>
       </section>
 
       <section class="resultPanel">
@@ -438,6 +450,11 @@
       const imageLink = document.querySelector("#imageLink");
       const saveLink = document.querySelector("#saveLink");
       const upscaleButton = document.querySelector("#upscaleButton");
+      const videoButton = document.querySelector("#videoButton");
+      const videoPromptLabel = document.querySelector("#videoPromptLabel");
+      const videoPromptInput = document.querySelector("#videoPrompt");
+      const videoPreview = document.querySelector("#videoPreview");
+      const videoDownloadLink = document.querySelector("#videoDownloadLink");
       const galleryGrid = document.querySelector("#galleryGrid");
       const clearGalleryButton = document.querySelector("#clearGalleryButton");
       let currentImageUrl = "";
@@ -721,6 +738,12 @@
           .filter((item) => item?.url);
       }
 
+      function collectVideoUrl(result) {
+        const data = result?.data || result;
+        const video = data?.video || data?.data?.video;
+        return typeof video === "string" ? video : video?.url || "";
+      }
+
       function selectedLoras() {
         return loraControls
           .map((control) => ({
@@ -952,6 +975,15 @@
         ]);
       }
 
+      function resetVideoOutput() {
+        videoPreview.pause();
+        videoPreview.removeAttribute("src");
+        videoPreview.load();
+        videoPreview.hidden = true;
+        videoDownloadLink.hidden = true;
+        videoDownloadLink.removeAttribute("href");
+      }
+
       function showImage(url) {
         currentImageUrl = url;
         preview.src = url;
@@ -961,7 +993,10 @@
         saveLink.href = url;
         saveLink.download = `fal-image-${Date.now()}.png`;
         saveLink.hidden = false;
+        resetVideoOutput();
         upscaleButton.hidden = false;
+        videoButton.hidden = false;
+        videoPromptLabel.hidden = false;
       }
 
       function galleryLabel(entry) {
@@ -1109,6 +1144,50 @@
         }
       }
 
+      async function generateVideo() {
+        if (!currentImageUrl) {
+          setStatus("Generate or choose an image first.", true);
+          return;
+        }
+
+        const prompt = videoPromptInput.value.trim() || "Subtle natural motion, camera holds steady.";
+        const originalLabel = videoButton.textContent;
+        submitButton.disabled = true;
+        upscaleButton.disabled = true;
+        videoButton.disabled = true;
+        videoButton.textContent = "Generating video… ($0.25)";
+        setStatus("Generating 5-second video with MiniMax H3...");
+
+        try {
+          const endpointId = "minimax/h3/image-to-video";
+          const result = await runFal(endpointId, {
+            prompt,
+            image_url: currentImageUrl,
+            duration: 5,
+            resolution: "480P",
+            prompt_expansion_mode: "fast",
+            enable_safety_checker: false
+          });
+          const videoUrl = collectVideoUrl(result);
+          if (!videoUrl) throw new Error("MiniMax H3 returned no video URL.");
+
+          videoPreview.src = videoUrl;
+          videoPreview.hidden = false;
+          videoDownloadLink.href = videoUrl;
+          videoDownloadLink.download = `fal-video-${Date.now()}.mp4`;
+          videoDownloadLink.hidden = false;
+          videoPreview.play().catch(() => {});
+          setStatus("Done. 5-second video generated.");
+        } catch (error) {
+          setStatus(error.message, true);
+        } finally {
+          submitButton.disabled = false;
+          upscaleButton.disabled = false;
+          videoButton.disabled = false;
+          videoButton.textContent = originalLabel;
+        }
+      }
+
       async function upscaleCurrentImage() {
         if (!currentImageUrl) {
           setStatus("Generate or choose an image first.", true);
@@ -1229,6 +1308,7 @@
         generateImage();
       });
       upscaleButton.addEventListener("click", upscaleCurrentImage);
+      videoButton.addEventListener("click", generateVideo);
       clearGalleryButton.addEventListener("click", () => {
         localStorage.removeItem(HISTORY_KEY);
         renderGallery();
