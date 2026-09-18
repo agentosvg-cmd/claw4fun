@@ -159,8 +159,10 @@
         color: var(--danger);
       }
 
-      img {
+      img,
+      video {
         width: 100%;
+        max-width: 100%;
         border-radius: 8px;
         border: 1px solid var(--line);
       }
@@ -169,13 +171,15 @@
         color: #8bd8ff;
       }
 
-      .resultActions {
+      .resultActions,
+      .mediaActions {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
       }
 
-      .resultActions a {
+      .resultActions a,
+      .resultActions button {
         min-height: 42px;
         display: inline-flex;
         align-items: center;
@@ -214,7 +218,8 @@
         -webkit-tap-highlight-color: rgba(52, 178, 122, 0.22);
       }
 
-      .galleryItem img {
+      .galleryItem img,
+      .galleryItem video {
         aspect-ratio: 1;
         object-fit: cover;
         border: 0;
@@ -268,11 +273,11 @@
         </div>
 
         <div class="presetRow">
-          <button id="bedSheetKameezPreset" class="presetButton" type="button">Bed sheet kameez</button>
+          <button id="pinkLaceNecklinePreset" class="presetButton" type="button">+ Pink lace neckline</button>
         </div>
 
         <div class="presetRow">
-          <button id="braEdgePreset" class="presetButton" type="button">+ Bra edge visible</button>
+          <button id="bedSheetKameezPreset" class="presetButton" type="button">Bed sheet kameez</button>
         </div>
 
         <div class="presetRow">
@@ -384,12 +389,28 @@
           <a id="imageLink" hidden>Open image</a>
           <a id="saveLink" hidden>Save image</a>
         </div>
-        <button id="upscaleButton" class="presetButton" type="button" hidden>Upscale 4K</button>
+        <label>
+          Upload image for video
+          <input id="videoSource" type="file" accept="image/*" />
+        </label>
+        <label id="videoPromptLabel">
+          Describe the motion (optional)
+          <input id="videoPrompt" type="text" placeholder="Subtle natural motion, camera holds steady." />
+        </label>
+        <div class="mediaActions">
+          <button id="upscaleButton" class="presetButton" type="button" hidden>Upscale 4K</button>
+          <button id="videoButton" class="presetButton" type="button">Video</button>
+        </div>
+        <video id="videoPreview" controls autoplay loop muted playsinline hidden></video>
+        <div class="resultActions">
+          <a id="videoOpenLink" target="_blank" rel="noopener" hidden>Open video</a>
+          <button id="videoDownloadButton" type="button" hidden>Download video</button>
+        </div>
       </section>
 
       <section class="resultPanel">
         <div class="panelHeader">
-          <h2>Last 10 Photos</h2>
+          <h2>Last 10 Media</h2>
           <button id="clearGalleryButton" class="smallButton" type="button">Clear</button>
         </div>
         <div id="galleryGrid" class="galleryGrid" aria-live="polite"></div>
@@ -411,8 +432,8 @@
       const handwashKameezPreset = document.querySelector("#handwashKameezPreset");
       const airlineTrayKameezPreset = document.querySelector("#airlineTrayKameezPreset");
       const batikKameezPreset = document.querySelector("#batikKameezPreset");
+      const pinkLaceNecklinePreset = document.querySelector("#pinkLaceNecklinePreset");
       const bedSheetKameezPreset = document.querySelector("#bedSheetKameezPreset");
-      const braEdgePreset = document.querySelector("#braEdgePreset");
       const clearPromptButton = document.querySelector("#clearPromptButton");
       const apertureInput = document.querySelector("#aperture");
       const apertureValue = document.querySelector("#apertureValue");
@@ -438,9 +459,17 @@
       const imageLink = document.querySelector("#imageLink");
       const saveLink = document.querySelector("#saveLink");
       const upscaleButton = document.querySelector("#upscaleButton");
+      const videoButton = document.querySelector("#videoButton");
+      const videoSourceInput = document.querySelector("#videoSource");
+      const videoPromptLabel = document.querySelector("#videoPromptLabel");
+      const videoPromptInput = document.querySelector("#videoPrompt");
+      const videoPreview = document.querySelector("#videoPreview");
+      const videoOpenLink = document.querySelector("#videoOpenLink");
+      const videoDownloadButton = document.querySelector("#videoDownloadButton");
       const galleryGrid = document.querySelector("#galleryGrid");
       const clearGalleryButton = document.querySelector("#clearGalleryButton");
       let currentImageUrl = "";
+      let currentVideoUrl = "";
 
       const handwashKameezPrompt = [
         "Chinese Woman in shoulder dramatic extremely large square low cut embroidered kameez washing hand.",
@@ -459,13 +488,6 @@
         "She smiles warmly to camera."
       ].join(" ");
 
-      const braEdgePrompt = [
-        "She is wearing a pink floral lace bra underneath, with a delicate scalloped lace edge and sheer underwire cups showing a fine floral lace pattern throughout.",
-        "Thin adjustable straps finished in matching lace trim. A small navy-blue ribbon bow sits at the center front gore between the cups. Soft blush-pink tone, lightweight and semi-sheer lace texture.",
-        "The bra edge is slightly visible peeking at the low-cut neckline, not fully concealed and not fully exposed.",
-        "Natural fit, realistic fabric contact with skin, soft lace texture detail visible at the edge."
-      ].join(" ");
-
       const batikKameezPrompt = [
         "Wearing a traditional Southeast Asian two-piece batik outfit. Deep royal cobalt-blue fabric.",
         "Dramatic embroidered kameez blouse with an extremely large square low-cut neckline, fitted hip-length fit. Straight three-quarter sleeves.",
@@ -478,6 +500,13 @@
         "Color palette: cobalt blue base, dark navy, burnt orange, terracotta red, rust red, burgundy, mustard gold, emerald green, turquoise, muted purple, cream, black.",
         "Matte premium batik fabric, crisp textile print, realistic woven texture, elegant heritage fashion, highly detailed, symmetrical, refined, traditional formal attire.",
         "Realistic fabric folds."
+      ].join(" ");
+
+      const pinkLaceNecklinePrompt = [
+        "She wears a soft blush-pink floral lace underlayer beneath her clothing.",
+        "The underlayer stays covered by the outer garment, with only a narrow scalloped lace edge subtly visible at the low-cut neckline.",
+        "A small navy-blue bow detail is barely visible at the center beneath the neckline.",
+        "Natural layered fit, realistic fabric contact, fully clothed, tasteful fashion styling."
       ].join(" ");
 
       const bedSheetKameezPrompt = [
@@ -612,6 +641,12 @@
           label: "Lorin - Flux 2 Klein",
           family: "flux2_klein",
           path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/flux2klein_lorin_falai.safetensors"
+        },
+        enhanced_details_flux2_klein: {
+          label: "Enhanced Details",
+          family: "flux2_klein",
+          path: "https://huggingface.co/dx8152/Flux2-Klein-9B-Enhanced-Details/resolve/main/realistic.safetensors",
+          triggerWord: "realistic"
         }
       };
 
@@ -719,6 +754,12 @@
         return candidates
           .map((item) => (typeof item === "string" ? { url: item } : item))
           .filter((item) => item?.url);
+      }
+
+      function collectVideoUrl(result) {
+        const data = result?.data || result;
+        const video = data?.video || data?.data?.video;
+        return typeof video === "string" ? video : video?.url || "";
       }
 
       function selectedLoras() {
@@ -952,6 +993,27 @@
         ]);
       }
 
+      function resetVideoOutput() {
+        currentVideoUrl = "";
+        videoPreview.pause();
+        videoPreview.removeAttribute("src");
+        videoPreview.load();
+        videoPreview.hidden = true;
+        videoOpenLink.hidden = true;
+        videoOpenLink.removeAttribute("href");
+        videoDownloadButton.hidden = true;
+      }
+
+      function showVideo(url) {
+        currentVideoUrl = url;
+        videoPreview.src = url;
+        videoPreview.hidden = false;
+        videoOpenLink.href = url;
+        videoOpenLink.hidden = false;
+        videoDownloadButton.hidden = false;
+        videoPreview.play().catch(() => {});
+      }
+
       function showImage(url) {
         currentImageUrl = url;
         preview.src = url;
@@ -961,7 +1023,10 @@
         saveLink.href = url;
         saveLink.download = `fal-image-${Date.now()}.png`;
         saveLink.hidden = false;
+        resetVideoOutput();
         upscaleButton.hidden = false;
+        videoButton.hidden = false;
+        videoPromptLabel.hidden = false;
       }
 
       function galleryLabel(entry) {
@@ -980,38 +1045,63 @@
         return image?.url || "";
       }
 
+      function firstHistoryVideo(entry) {
+        const video = entry.videos?.find((item) => item?.url);
+        return video?.url || "";
+      }
+
       function restoreEntry(entry) {
-        const url = firstHistoryImage(entry);
-        if (!url) return;
-        showImage(url);
-        setStatus(`Loaded from history: ${entry.model || "fal"}`);
+        const videoUrl = firstHistoryVideo(entry);
+        if (videoUrl) {
+          if (entry.sourceImageUrl) showImage(entry.sourceImageUrl);
+          showVideo(videoUrl);
+          setStatus(`Loaded video from history: ${entry.model || "fal"}`);
+          return;
+        }
+
+        const imageUrl = firstHistoryImage(entry);
+        if (!imageUrl) return;
+        showImage(imageUrl);
+        setStatus(`Loaded image from history: ${entry.model || "fal"}`);
       }
 
       function renderGallery() {
         const history = loadHistory();
         galleryGrid.textContent = "";
         if (!history.length) {
-          galleryGrid.textContent = "No generated history yet.";
+          galleryGrid.textContent = "No generated media yet.";
           return;
         }
         for (const entry of history) {
-          const url = firstHistoryImage(entry);
-          if (!url) continue;
+          const videoUrl = firstHistoryVideo(entry);
+          const imageUrl = firstHistoryImage(entry);
+          if (!videoUrl && !imageUrl) continue;
           const item = document.createElement("article");
           item.className = "galleryItem";
           item.tabIndex = 0;
           item.setAttribute("role", "button");
 
-          const image = document.createElement("img");
-          image.src = url;
-          image.alt = "";
-          image.loading = "lazy";
+          let media;
+          if (videoUrl) {
+            media = document.createElement("video");
+            media.src = videoUrl;
+            media.muted = true;
+            media.playsInline = true;
+            media.preload = "metadata";
+            if (entry.sourceImageUrl) media.poster = entry.sourceImageUrl;
+          } else {
+            media = document.createElement("img");
+            media.src = imageUrl;
+            media.alt = "";
+            media.loading = "lazy";
+          }
 
           const label = document.createElement("span");
-          label.textContent = `${galleryLabel(entry)} | ${entry.model || "fal"}`;
+          const mediaType = videoUrl ? "Video" : "Image";
+          label.textContent = `${mediaType} | ${galleryLabel(entry)}`;
 
           const restore = () => restoreEntry(entry);
-          item.append(image, label);
+          item.append(media, label);
           item.addEventListener("click", restore);
           item.addEventListener("keydown", (event) => {
             if (event.key === "Enter" || event.key === " ") {
@@ -1045,9 +1135,60 @@
           strengthLabel.append(strength);
 
           const value = strengthLabel.querySelector(".rangeValue");
-          loraControls.push({ select, strength, value });
+          loraControls.push({ select, strength, value, autoInsertedTrigger: "", selectedKey: "none" });
           loraGrid.append(loraLabel, strengthLabel);
         }
+      }
+
+      function escapeRegExp(value) {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+
+      function triggerPattern(triggerWord) {
+        return new RegExp(`(^|[\\s,])${escapeRegExp(triggerWord)}(?=$|[\\s,])`, "i");
+      }
+
+      function removeAutoInsertedTrigger(control) {
+        const triggerWord = control.autoInsertedTrigger;
+        if (!triggerWord) return;
+
+        promptInput.value = promptInput.value
+          .replace(triggerPattern(triggerWord), (match, prefix, offset) => {
+            if (offset === 0) return "";
+            return prefix.includes(",") ? ", " : " ";
+          })
+          .replace(/^\s*,\s*/, "")
+          .replace(/,\s*,+/g, ", ")
+          .replace(/,\s*$/, "")
+          .replace(/\s{2,}/g, " ")
+          .trim();
+        control.autoInsertedTrigger = "";
+      }
+
+      function applyLoraSelection(control) {
+        const selectedKey = control.select.value;
+        const preset = loraPresets[selectedKey];
+
+        if (control.selectedKey !== selectedKey) {
+          removeAutoInsertedTrigger(control);
+        }
+
+        if (Number.isFinite(preset?.defaultScale)) {
+          control.strength.value = String(preset.defaultScale * 100);
+        }
+
+        if (preset?.triggerWord) {
+          const existing = promptInput.value.trim();
+          if (!triggerPattern(preset.triggerWord).test(existing)) {
+            promptInput.value = existing ? `${preset.triggerWord}, ${existing}` : preset.triggerWord;
+            control.autoInsertedTrigger = preset.triggerWord;
+          }
+          setStatus(`${preset.label} selected. Trigger word added to prompt.`);
+        }
+
+        control.selectedKey = selectedKey;
+        updateControlLabels();
+        setConfigForModel();
       }
 
       async function buildInput() {
@@ -1106,6 +1247,91 @@
         } finally {
           submitButton.disabled = false;
           upscaleButton.disabled = false;
+        }
+      }
+
+      async function generateVideo() {
+        const uploadedFile = videoSourceInput.files?.[0];
+        if (!uploadedFile && !currentImageUrl) {
+          setStatus("Upload an image or generate one first.", true);
+          return;
+        }
+
+        const prompt = videoPromptInput.value.trim() || "Subtle natural motion, camera holds steady.";
+        const originalLabel = videoButton.textContent;
+        submitButton.disabled = true;
+        upscaleButton.disabled = true;
+        videoButton.disabled = true;
+        videoButton.textContent = "Generating video… ($0.25)";
+
+        try {
+          localStorage.setItem(STORAGE_KEY, falKeyInput.value.trim());
+          let sourceImageUrl = currentImageUrl;
+          if (uploadedFile) {
+            setStatus("Uploading image for video...");
+            sourceImageUrl = await uploadFile(uploadedFile);
+            showImage(sourceImageUrl);
+          }
+
+          setStatus("Generating 5-second video with MiniMax H3...");
+          const endpointId = "minimax/h3/image-to-video";
+          const result = await runFal(endpointId, {
+            prompt,
+            image_url: sourceImageUrl,
+            duration: 5,
+            resolution: "480P",
+            prompt_expansion_mode: "fast",
+            enable_safety_checker: false
+          });
+          const videoUrl = collectVideoUrl(result);
+          if (!videoUrl) throw new Error("MiniMax H3 returned no video URL.");
+
+          showVideo(videoUrl);
+          addHistoryEntry({
+            model: endpointId,
+            prompt,
+            sourceImageUrl,
+            videos: [{ url: videoUrl }]
+          });
+          setStatus("Done. 5-second video generated and saved to media history.");
+        } catch (error) {
+          setStatus(error.message, true);
+        } finally {
+          submitButton.disabled = false;
+          upscaleButton.disabled = false;
+          videoButton.disabled = false;
+          videoButton.textContent = originalLabel;
+        }
+      }
+
+      async function downloadCurrentVideo() {
+        if (!currentVideoUrl) {
+          setStatus("Generate or choose a video first.", true);
+          return;
+        }
+
+        const originalLabel = videoDownloadButton.textContent;
+        videoDownloadButton.disabled = true;
+        videoDownloadButton.textContent = "Downloading…";
+
+        try {
+          const response = await fetch(currentVideoUrl);
+          if (!response.ok) throw new Error(`Download failed (${response.status}).`);
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          const downloadLink = document.createElement("a");
+          downloadLink.href = blobUrl;
+          downloadLink.download = `fal-video-${Date.now()}.mp4`;
+          document.body.append(downloadLink);
+          downloadLink.click();
+          downloadLink.remove();
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+          setStatus("Video download started.");
+        } catch (error) {
+          setStatus(`${error.message} Use Open video, then Share or Save to Files.`, true);
+        } finally {
+          videoDownloadButton.disabled = false;
+          videoDownloadButton.textContent = originalLabel;
         }
       }
 
@@ -1175,7 +1401,7 @@
       }
 
       for (const control of loraControls) {
-        control.select.addEventListener("change", setConfigForModel);
+        control.select.addEventListener("change", () => applyLoraSelection(control));
         control.strength.addEventListener("input", () => {
           updateControlLabels();
           setConfigForModel();
@@ -1208,16 +1434,16 @@
         promptInput.focus();
         setStatus("Batik kameez description added to prompt.");
       });
+      pinkLaceNecklinePreset.addEventListener("click", () => {
+        const existing = promptInput.value.trim();
+        promptInput.value = existing ? `${existing}\n\n${pinkLaceNecklinePrompt}` : pinkLaceNecklinePrompt;
+        promptInput.focus();
+        setStatus("Pink lace neckline description added to prompt.");
+      });
       bedSheetKameezPreset.addEventListener("click", () => {
         promptInput.value = bedSheetKameezPrompt;
         promptInput.focus();
         setStatus("Bed sheet kameez prompt loaded.");
-      });
-      braEdgePreset.addEventListener("click", () => {
-        const existing = promptInput.value.trim();
-        promptInput.value = existing ? `${existing}\n\n${braEdgePrompt}` : braEdgePrompt;
-        promptInput.focus();
-        setStatus("Bra edge description added to prompt.");
       });
       clearPromptButton.addEventListener("click", () => {
         promptInput.value = "";
@@ -1229,6 +1455,8 @@
         generateImage();
       });
       upscaleButton.addEventListener("click", upscaleCurrentImage);
+      videoButton.addEventListener("click", generateVideo);
+      videoDownloadButton.addEventListener("click", downloadCurrentVideo);
       clearGalleryButton.addEventListener("click", () => {
         localStorage.removeItem(HISTORY_KEY);
         renderGallery();
