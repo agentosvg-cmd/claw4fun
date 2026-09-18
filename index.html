@@ -641,6 +641,13 @@
           label: "Lorin - Flux 2 Klein",
           family: "flux2_klein",
           path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/flux2klein_lorin_falai.safetensors"
+        },
+        srx_detail_flux2_klein: {
+          label: "SRX Realistic Detail - Flux 2 Klein",
+          family: "flux2_klein",
+          path: "https://huggingface.co/SOLRICKS/Flux2-Klein-9B-Realistic-Detail/resolve/main/flux2_klein_9b_srx_detail_lora.safetensors",
+          triggerWord: "srx_detail",
+          defaultScale: 0.8
         }
       };
 
@@ -1134,6 +1141,25 @@
         }
       }
 
+      function applyLoraSelection(control) {
+        const preset = loraPresets[control.select.value];
+        if (Number.isFinite(preset?.defaultScale)) {
+          control.strength.value = String(preset.defaultScale * 100);
+        }
+
+        if (preset?.triggerWord) {
+          const triggerPattern = new RegExp(`(^|[\\s,])${preset.triggerWord}(?=$|[\\s,])`, "i");
+          const existing = promptInput.value.trim();
+          if (!triggerPattern.test(existing)) {
+            promptInput.value = existing ? `${preset.triggerWord}, ${existing}` : preset.triggerWord;
+          }
+          setStatus(`${preset.label} selected. Trigger word added to prompt.`);
+        }
+
+        updateControlLabels();
+        setConfigForModel();
+      }
+
       async function buildInput() {
         if (hasLoraFamilyConflict()) {
           throw new Error("All selected LoRAs must be from the same model family.");
@@ -1344,7 +1370,7 @@
       }
 
       for (const control of loraControls) {
-        control.select.addEventListener("change", setConfigForModel);
+        control.select.addEventListener("change", () => applyLoraSelection(control));
         control.strength.addEventListener("input", () => {
           updateControlLabels();
           setConfigForModel();
