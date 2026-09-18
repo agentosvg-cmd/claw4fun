@@ -1141,24 +1141,7 @@
       }
 
       function escapeRegExp(value) {
-        return value.replace(/[.*+?^${}()|[\]\\]/g, "\\      function applyLoraSelection(control) {
-        const preset = loraPresets[control.select.value];
-        if (Number.isFinite(preset?.defaultScale)) {
-          control.strength.value = String(preset.defaultScale * 100);
-        }
-
-        if (preset?.triggerWord) {
-          const triggerPattern = new RegExp(`(^|[\\s,])${preset.triggerWord}(?=$|[\\s,])`, "i");
-          const existing = promptInput.value.trim();
-          if (!triggerPattern.test(existing)) {
-            promptInput.value = existing ? `${preset.triggerWord}, ${existing}` : preset.triggerWord;
-          }
-          setStatus(`${preset.label} selected. Trigger word added to prompt.`);
-        }
-
-        updateControlLabels();
-        setConfigForModel();
-      }");
+        return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       }
 
       function triggerPattern(triggerWord) {
