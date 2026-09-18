@@ -642,12 +642,11 @@
           family: "flux2_klein",
           path: "https://huggingface.co/AmericanoLatte/Lorin_Krea_Lora/resolve/main/flux2klein_lorin_falai.safetensors"
         },
-        srx_detail_flux2_klein: {
-          label: "SRX Realistic Detail - Flux 2 Klein",
+        enhanced_details_flux2_klein: {
+          label: "Enhanced Details",
           family: "flux2_klein",
-          path: "https://huggingface.co/SOLRICKS/Flux2-Klein-9B-Realistic-Detail/resolve/main/flux2_klein_9b_srx_detail_lora.safetensors",
-          triggerWord: "srx_detail",
-          defaultScale: 0.8
+          path: "https://huggingface.co/dx8152/Flux2-Klein-9B-Enhanced-Details/resolve/main/realistic.safetensors",
+          triggerWord: "realistic"
         }
       };
 
@@ -1136,12 +1135,13 @@
           strengthLabel.append(strength);
 
           const value = strengthLabel.querySelector(".rangeValue");
-          loraControls.push({ select, strength, value });
+          loraControls.push({ select, strength, value, autoInsertedTrigger: "", selectedKey: "none" });
           loraGrid.append(loraLabel, strengthLabel);
         }
       }
 
-      function applyLoraSelection(control) {
+      function escapeRegExp(value) {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, "\\      function applyLoraSelection(control) {
         const preset = loraPresets[control.select.value];
         if (Number.isFinite(preset?.defaultScale)) {
           control.strength.value = String(preset.defaultScale * 100);
@@ -1156,6 +1156,54 @@
           setStatus(`${preset.label} selected. Trigger word added to prompt.`);
         }
 
+        updateControlLabels();
+        setConfigForModel();
+      }");
+      }
+
+      function triggerPattern(triggerWord) {
+        return new RegExp(`(^|[\\s,])${escapeRegExp(triggerWord)}(?=$|[\\s,])`, "i");
+      }
+
+      function removeAutoInsertedTrigger(control) {
+        const triggerWord = control.autoInsertedTrigger;
+        if (!triggerWord) return;
+
+        promptInput.value = promptInput.value
+          .replace(triggerPattern(triggerWord), (match, prefix, offset) => {
+            if (offset === 0) return "";
+            return prefix.includes(",") ? ", " : " ";
+          })
+          .replace(/^\s*,\s*/, "")
+          .replace(/,\s*,+/g, ", ")
+          .replace(/,\s*$/, "")
+          .replace(/\s{2,}/g, " ")
+          .trim();
+        control.autoInsertedTrigger = "";
+      }
+
+      function applyLoraSelection(control) {
+        const selectedKey = control.select.value;
+        const preset = loraPresets[selectedKey];
+
+        if (control.selectedKey !== selectedKey) {
+          removeAutoInsertedTrigger(control);
+        }
+
+        if (Number.isFinite(preset?.defaultScale)) {
+          control.strength.value = String(preset.defaultScale * 100);
+        }
+
+        if (preset?.triggerWord) {
+          const existing = promptInput.value.trim();
+          if (!triggerPattern(preset.triggerWord).test(existing)) {
+            promptInput.value = existing ? `${preset.triggerWord}, ${existing}` : preset.triggerWord;
+            control.autoInsertedTrigger = preset.triggerWord;
+          }
+          setStatus(`${preset.label} selected. Trigger word added to prompt.`);
+        }
+
+        control.selectedKey = selectedKey;
         updateControlLabels();
         setConfigForModel();
       }
